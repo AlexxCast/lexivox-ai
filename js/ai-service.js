@@ -1,146 +1,79 @@
 /**
- * LexiVox AI - Conversational AI Service
- * Supports built-in contextual conversational scenarios (offline/zero config)
- * and optional live Google Gemini / OpenAI API integration.
+ * LexiVox AI - Hyper-Adaptive Conversational AI Tutor
+ * Adapts dynamically to the learner's cognitive profile (severe DSA),
+ * current CEFR level, persistent error history, and spoken evolution.
+ * Zero rigid/canned scenarios.
  */
 
 import { configManager } from './config.js';
 
-const SCENARIOS = {
-  casual: {
-    name: "Caffè & Conversazione Quotidiana",
-    description: "Parla della tua giornata, delle tue passioni e di cosa hai fatto oggi.",
-    initialAiMessage: {
-      en: "Hi! It's great to talk with you today. How are you feeling, and what did you do this morning?",
-      it: "Ciao! È fantastico parlare con te oggi. Come ti senti e cosa hai fatto questa mattina?"
-    },
-    contextReplies: [
-      {
-        match: /(coffee|breakfast|tea|eat|drink|ate)/i,
-        en: "Nice! A good coffee or breakfast always helps start the day right. Do you drink coffee every morning?",
-        it: "Bello! Un buon caffè o una colazione aiuta sempre a iniziare bene la giornata. Bevi caffè ogni mattina?"
-      },
-      {
-        match: /(work|job|office|busy|study|school)/i,
-        en: "I see! Having a busy day can be tiring, but you are doing great. What kind of work or projects do you enjoy most?",
-        it: "Capisco! Avere una giornata intensa può essere stancante, ma stai andando alla grande. Che tipo di lavoro o progetti ti piacciono di più?"
-      },
-      {
-        match: /(good|fine|well|happy|great|tired)/i,
-        en: "I'm glad to hear from you! By the way, what are your plans for tomorrow or this weekend?",
-        it: "Mi fa molto piacere sentirti! A proposito, quali sono i tuoi piani per domani o per questo fine settimana?"
-      },
-      {
-        match: /(cinema|movie|film|music|game|sport|football|relax)/i,
-        en: "That sounds like a lot of fun! Who do you usually watch movies or listen to music with?",
-        it: "Sembra davvero divertente! Di solito con chi guardi film o ascolti musica?"
-      }
-    ],
-    defaultReplies: [
-      {
-        en: "That is really interesting! Could you tell me a little bit more about that?",
-        it: "È davvero interessante! Mi diresti qualcosa in più su questo?"
-      },
-      {
-        en: "I understand! And what do you usually like to do when you have free time in the afternoon?",
-        it: "Ho capito! E cosa ti piace fare di solito quando hai tempo libero nel pomeriggio?"
-      },
-      {
-        en: "You are speaking very clearly! How often do you practice speaking English like this?",
-        it: "Stai parlando in modo molto chiaro! Quanto spesso fai pratica parlando in inglese così?"
-      }
-    ]
-  },
-
-  travel: {
-    name: "Viaggi, Aeroporto & Hotel",
-    description: "Simula situazioni reali all'estero: check-in, ordinare, chiedere indicazioni.",
-    initialAiMessage: {
-      en: "Welcome to London Heathrow Airport! May I please see your passport and flight ticket?",
-      it: "Benvenuto all'aeroporto di Londra Heathrow! Posso vedere il suo passaporto e il biglietto aereo?"
-    },
-    contextReplies: [
-      {
-        match: /(here|passport|ticket|take|please)/i,
-        en: "Thank you very much. Everything looks in order! Are you traveling for business or for a holiday?",
-        it: "Molte grazie. Sembra tutto in ordine! Viaggia per lavoro o per vacanza?"
-      },
-      {
-        match: /(holiday|vacation|fun|visit|trip|tourism)/i,
-        en: "Wonderful! London has fantastic museums and parks. How many days will you stay here?",
-        it: "Meraviglioso! Londra ha musei e parchi fantastici. Quanti giorni rimarrai qui?"
-      },
-      {
-        match: /(business|work|meeting|conference)/i,
-        en: "Understood. I hope you have a productive stay. Do you need any assistance finding a taxi into the city center?",
-        it: "Ricevuto. Spero tu abbia un soggiorno produttivo. Ha bisogno di aiuto per trovare un taxi verso il centro?"
-      }
-    ],
-    defaultReplies: [
-      {
-        en: "Excellent! Here is your boarding pass. Gate 14 is just down the hall on your left. Have a safe flight!",
-        it: "Eccellente! Ecco la sua carta d'imbarco. Il gate 14 è in fondo al corridoio a sinistra. Buon volo!"
-      }
-    ]
-  },
-
-  restaurant: {
-    name: "Al Ristorante & Pub",
-    description: "Impara a ordinare cibo, chiedere il conto e scambiare due chiacchiere con il cameriere.",
-    initialAiMessage: {
-      en: "Good evening! Welcome to The Green Table. Table for one or two people tonight?",
-      it: "Buonasera! Benvenuti a The Green Table. Tavolo per una o due persone stasera?"
-    },
-    contextReplies: [
-      {
-        match: /(one|two|table|person|people)/i,
-        en: "Perfect, right this way please! Would you like to start with something to drink while you check the menu?",
-        it: "Perfetto, da questa parte prego! Desidera iniziare con qualcosa da bere mentre consulta il menu?"
-      },
-      {
-        match: /(water|beer|wine|coke|juice|drink)/i,
-        en: "Coming right up! For the main dish, our chef recommends the grilled salmon or pasta. What do you feel like eating?",
-        it: "Arriva subito! Come piatto principale, il nostro chef consiglia il salmone alla griglia o la pasta. Cosa le andrebbe di mangiare?"
-      },
-      {
-        match: /(bill|check|pay|card|cash)/i,
-        en: "Certainly! Here is the bill. You can pay by card or cash whenever you are ready.",
-        it: "Certamente! Ecco il conto. Può pagare con carta o contanti quando preferisce."
-      }
-    ],
-    defaultReplies: [
-      {
-        en: "Delicious choice! I'll bring that to the kitchen immediately. Enjoy your meal!",
-        it: "Scelta deliziosa! Lo porto subito in cucina. Buon appetito!"
-      }
-    ]
-  }
-};
-
 class AiService {
   constructor() {
-    this.currentScenarioKey = 'casual';
     this.conversationHistory = [];
   }
 
-  getAvailableScenarios() {
-    return Object.entries(SCENARIOS).map(([key, data]) => ({
-      key,
-      name: data.name,
-      description: data.description
-    }));
+  /* Construct deep learner context for Gemini / OpenAI */
+  buildAdaptiveSystemPrompt() {
+    const profile = configManager.profile;
+    const name = profile.userName || 'Alessio';
+    const level = profile.currentLevel || 'Pre-A1';
+    
+    // Extract top persistent error bottlenecks
+    const activeErrors = Object.entries(profile.errorStats || {})
+      .filter(([_, data]) => data.count > 0 && !data.conquered)
+      .sort((a, b) => b[1].count - a[1].count)
+      .map(([id, data]) => `- ${data.label}: commesso ${data.count} volte`);
+
+    const conqueredSkills = (profile.conqueredBottlenecks || []).map(b => b.label);
+    const wpm = profile.latestWpm || 65;
+
+    return `You are David, a world-class, empathetic personal English tutor and speech coach.
+You are talking directly to your adult student ${name}.
+
+STUDENT PROFILE & LEARNING EVOLUTION:
+- Cognitive Condition: Severe DSA (dyslexia and learning differences). Needs high patience, low cognitive friction.
+- Current CEFR Spoken Level: ${level}
+- Target Goal: ${profile.targetLevel}
+- Known Persistent Weak Points (Error Tracker):
+${activeErrors.length > 0 ? activeErrors.join('\n') : '- Still assessing initial speaking patterns (reinforce basic verbs, 3rd person -s, and past tense)'}
+- Mastered Skills: ${conqueredSkills.length > 0 ? conqueredSkills.join(', ') : 'Initial greetings and basic routine'}
+- Speech Tempo: ~${wpm} WPM.
+
+PEDAGOGICAL RULES (STRICT):
+1. NO ARTIFICIAL OR CHILDISH ROLEPLAY SCENARIOS. Talk like a real, supportive human friend and coach who knows ${name} personally.
+2. CONCISE SPOKEN RESPONSES: Max 1 to 2 short sentences (under 25 words). Never produce long paragraphs or textbook grammar explanations.
+3. ADAPT TO WEAKNESSES: Naturally steer the conversation so ${name} gets an opportunity to practice structures they struggle with (e.g. if they struggle with past verbs, ask about yesterday; if 3rd person -s, ask about someone in their family or a friend).
+4. NATURAL RECASTING: If ${name} makes a mistake, NEVER say "You made an error". Instead, model the correct phrasing naturally in your conversational reply.
+5. End with ONE simple, encouraging spoken question to prompt ${name}'s next turn.
+
+OUTPUT FORMAT:
+Respond ONLY with a valid JSON object:
+{
+  "en": "Short English coach response (1-2 sentences)",
+  "it": "Traduzione italiana semplice e immediata"
+}`;
   }
 
-  setScenario(key) {
-    if (SCENARIOS[key]) {
-      this.currentScenarioKey = key;
-      this.conversationHistory = [];
+  getActiveLearningFocus() {
+    const profile = configManager.profile;
+    const activeErrors = Object.entries(profile.errorStats || {})
+      .filter(([_, data]) => data.count > 0 && !data.conquered)
+      .sort((a, b) => b[1].count - a[1].count);
+
+    if (activeErrors.length > 0) {
+      return `Rinforzo attivo: ${activeErrors[0][1].label}`;
     }
+    return `Consolidamento parlato spontaneo (Livello ${profile.currentLevel})`;
   }
 
   getInitialGreeting() {
-    const scn = SCENARIOS[this.currentScenarioKey] || SCENARIOS.casual;
-    return scn.initialAiMessage;
+    const name = configManager.profile.userName || 'Alessio';
+    const level = configManager.profile.currentLevel || 'Pre-A1';
+
+    return {
+      en: `Hi ${name}! I'm David, your adaptive English tutor. I've tuned our session to your level (${level}). How are you feeling today, and what did you do this morning?`,
+      it: `Ciao ${name}! Sono David, il tuo tutor d'inglese adattivo. Ho calibrato la nostra sessione sul tuo livello (${level}). Come ti senti oggi e cosa hai fatto questa mattina?`
+    };
   }
 
   async generateResponse(userText) {
@@ -158,7 +91,7 @@ class AiService {
           return geminiResult;
         }
       } catch (err) {
-        console.warn('Gemini API call failed, falling back to local simulation:', err);
+        console.warn('Gemini API call failed, falling back to adaptive local engine:', err);
       }
     }
 
@@ -171,72 +104,140 @@ class AiService {
           return openaiResult;
         }
       } catch (err) {
-        console.warn('OpenAI API call failed, falling back to local simulation:', err);
+        console.warn('OpenAI API call failed, falling back to adaptive local engine:', err);
       }
     }
 
-    // High quality built-in simulation engine
-    return this.generateSimulatedResponse(userText);
+    // Adaptive local engine tailored to user evolution
+    return this.generateAdaptiveLocalResponse(userText);
   }
 
-  generateSimulatedResponse(userText) {
-    const scn = SCENARIOS[this.currentScenarioKey] || SCENARIOS.casual;
-    const lower = userText.toLowerCase();
+  /* Intelligent Adaptive Local Engine (Learns from user errors & level without API key) */
+  generateAdaptiveLocalResponse(userText) {
+    const profile = configManager.profile;
+    const name = profile.userName || 'Alessio';
+    const level = profile.currentLevel || 'Pre-A1';
+    const lower = userText.toLowerCase().trim();
 
     // Check if user is speaking nonsense or gibberish
-    if (/(hakuna|matata|chicka|fluka|bla\s*bla|random|asdf)/i.test(lower)) {
+    if (/(hakuna|matata|chicka|fluka|bla\s*bla|random|asdf|qwerty)/i.test(lower)) {
       return {
-        en: "I didn't detect valid English words in that. Please try expressing a real thought or phrase in English!",
-        it: "Non ho rilevato parole inglesi valide. Prova a formulare un pensiero reale o una frase in inglese!"
+        en: "I didn't catch valid English words in that. Tell me in your own words: what did you do today?",
+        it: "Non ho colto parole inglesi valide. Dimmi con le tue parole: cosa hai fatto oggi?"
       };
     }
 
-    // Look for matching context rules
-    for (const item of scn.contextReplies) {
-      if (item.match.test(userText)) {
-        this.conversationHistory.push({ role: 'assistant', content: item.en });
-        return { en: item.en, it: item.it };
+    // Check if user mentions difficulties, DSA, or feeling stuck
+    if (/(difficult|hard|help|cant|cannot|error|mistake|problem|dsa|dislessia|stuck|slow)/i.test(lower)) {
+      return {
+        en: `You are doing great, ${name}! Don't worry about mistakes. Let's take it easy: what is one thing you like doing in your free time?`,
+        it: `Stai andando benissimo, ${name}! Non preoccuparti degli errori. Facciamola con calma: cosa ti piace fare nel tempo libero?`
+      };
+    }
+
+    // Check if user spoke Italian
+    if (/(ciao|buongiorno|come|stai|grazie|non|so|cosa|dire|bene|male|oggi)/i.test(lower)) {
+      return {
+        en: "I hear some Italian! In English you can say: 'I am doing well'. How was your morning today?",
+        it: "Sento dell'italiano! In inglese puoi dire: 'I am doing well'. Com'è andata la tua mattinata oggi?"
+      };
+    }
+
+    // Find the student's highest priority error to steer the practice
+    const topErrorEntry = Object.entries(profile.errorStats || {})
+      .filter(([_, data]) => data.count > 0 && !data.conquered)
+      .sort((a, b) => b[1].count - a[1].count)[0];
+
+    const activeErrorId = topErrorEntry ? topErrorEntry[0] : null;
+
+    // Routine & Morning responses
+    if (/(wake|woke|morning|breakfast|coffee|tea|bed|clock|hour|sleep|slept)/i.test(lower)) {
+      if (activeErrorId === 'past_simple') {
+        return {
+          en: "Nice routine! Yesterday, what time did you wake up, and did you go out?",
+          it: "Bella routine! Ieri, a che ora ti sei svegliato e sei uscito?"
+        };
       }
-    }
-
-    // Contextual handling for waking up / morning routines
-    if (/(wake|woke|waking|up|sleep|slept|bed|9:00|8:00|7:00|am|clock)/i.test(lower)) {
       return {
-        en: "Waking up at that time gives you a fresh start! What do you usually have for breakfast after getting out of bed?",
-        it: "Svegliarsi a quell'ora dà un buon inizio di giornata! Cosa mangi di solito per colazione dopo esserti alzato?"
+        en: "Starting the day with coffee or breakfast is great. What are you planning to do this afternoon?",
+        it: "Iniziare la giornata con caffè o colazione è ottimo. Cosa hai in programma di fare questo pomeriggio?"
       };
     }
 
-    // Contextual handling for speaking difficulties / DSA
-    if (/(difficult|hard|help|cant|cannot|error|mistake|problem|dsa|dislessia)/i.test(lower)) {
+    // Work, Study & Day activities
+    if (/(work|worked|job|office|study|studied|school|busy|project)/i.test(lower)) {
+      if (activeErrorId === 'third_person_s') {
+        return {
+          en: "I understand! Do you work with a colleague or friend? What does he or she do?",
+          it: "Capisco! Lavori con un collega o un amico? Cosa fa lui o lei?"
+        };
+      }
       return {
-        en: "Don't worry at all! Take your time, breathe, and speak slowly. What topic would you like to practice today?",
-        it: "Non preoccuparti affatto! Prenditi il tuo tempo, respira e parla lentamente. Di quale argomento vorresti parlare oggi?"
+        en: "Work keeps us busy! When you finish working, how do you usually relax?",
+        it: "Il lavoro ci tiene impegnati! Quando finisci di lavorare, come ti rilassi di solito?"
       };
     }
 
-    // Contextual handling for Italian phrases
-    if (/(ciao|buongiorno|come|stai|grazie|non|so|cosa|dire)/i.test(lower)) {
+    // Hobbies, Movies, Music, Food
+    if (/(pizza|pasta|food|eat|ate|cinema|movie|film|music|game|sport|football|gym)/i.test(lower)) {
+      if (activeErrorId === 'past_simple') {
+        return {
+          en: "That sounds delicious and fun! When did you last eat that or watch that?",
+          it: "Sembra delizioso e divertente! Quando l'hai mangiato o guardato l'ultima volta?"
+        };
+      }
       return {
-        en: "I noticed you spoke some Italian! In English you can say: 'Hello, I'm ready to learn'. Give it a try!",
-        it: "Ho notato che hai usato parole italiane! In inglese puoi dire: 'Hello, I'm ready to learn'. Prova a ripeterlo a voce!"
+        en: "That's wonderful! Who do you usually share that with, friends or family?",
+        it: "Che bello! Con chi lo condividi di solito, amici o famiglia?"
       };
     }
 
-    // Fallback to rotating default replies
-    const randomIndex = Math.floor(Math.random() * scn.defaultReplies.length);
-    const chosen = scn.defaultReplies[randomIndex];
-    this.conversationHistory.push({ role: 'assistant', content: chosen.en });
-    return { en: chosen.en, it: chosen.it };
+    // Weekend & Past activities
+    if (/(yesterday|weekend|sunday|saturday|last\s+week|went|bought|saw|visited)/i.test(lower)) {
+      return {
+        en: "That sounds like a memorable day! Did you have fun, and who was with you?",
+        it: "Sembra una giornata memorabile! Ti sei divertito e chi c'era con te?"
+      };
+    }
+
+    // Adaptive default steering based on student's current CEFR level
+    if (level === 'Pre-A1' || level === 'A1') {
+      const adaptivePrompts = [
+        {
+          en: "I hear you! You are speaking clearly. Do you like living in your city?",
+          it: "Ti ascolto! Stai parlando in modo chiaro. Ti piace vivere nella tua città?"
+        },
+        {
+          en: "Good job! Tell me: what is your favorite food to eat on weekends?",
+          it: "Ottimo lavoro! Dimmi: qual è il tuo cibo preferito da mangiare nel weekend?"
+        },
+        {
+          en: "You are making steady progress! What music or sport do you enjoy most?",
+          it: "Stai facendo progressi costanti! Che musica o sport ti piace di più?"
+        }
+      ];
+      const res = adaptivePrompts[Math.floor(Math.random() * adaptivePrompts.length)];
+      this.conversationHistory.push({ role: 'assistant', content: res.en });
+      return res;
+    } else {
+      const advancedPrompts = [
+        {
+          en: "That's very interesting. How would you describe your typical week in a few words?",
+          it: "Molto interessante. Come descriveresti la tua settimana tipica in poche parole?"
+        },
+        {
+          en: "Great expression! If you could travel anywhere tomorrow, where would you go?",
+          it: "Ottima espressione! Se potessi viaggiare ovunque domani, dove andresti?"
+        }
+      ];
+      const res = advancedPrompts[Math.floor(Math.random() * advancedPrompts.length)];
+      this.conversationHistory.push({ role: 'assistant', content: res.en });
+      return res;
+    }
   }
 
   async callGeminiApi(prompt, apiKey) {
-    const systemPrompt = `You are LexiVox AI, an empathetic, supportive spoken English tutor for an adult with severe DSA (dyslexia/learning differences).
-Keep your reply CONCISE (1 to 2 sentences max), natural, friendly, and easy to understand aloud.
-End with one simple, engaging open question to keep the spoken conversation alive.
-Respond ONLY with a JSON object in this format:
-{"en": "Your english response here", "it": "Traduzione italiana concisa per facilitare la comprensione"}`;
-
+    const systemPrompt = this.buildAdaptiveSystemPrompt();
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
     const response = await fetch(url, {
@@ -260,7 +261,6 @@ Respond ONLY with a JSON object in this format:
     const data = await response.json();
     const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
     
-    // Parse JSON
     try {
       const cleaned = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
       return JSON.parse(cleaned);
@@ -270,9 +270,7 @@ Respond ONLY with a JSON object in this format:
   }
 
   async callOpenAiApi(prompt, apiKey) {
-    const systemPrompt = `You are LexiVox AI, an empathetic spoken English tutor for an adult with severe DSA (dyslexia).
-Keep your reply CONCISE (1-2 sentences), warm, clear, ending with a question.
-Return JSON: {"en": "your response", "it": "italian translation"}`;
+    const systemPrompt = this.buildAdaptiveSystemPrompt();
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -284,6 +282,7 @@ Return JSON: {"en": "your response", "it": "italian translation"}`;
         model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: systemPrompt },
+          ...this.conversationHistory.slice(-6).map(m => ({ role: m.role, content: m.content })),
           { role: 'user', content: prompt }
         ],
         temperature: 0.7

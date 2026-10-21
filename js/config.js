@@ -6,7 +6,7 @@
 const STORAGE_KEY = 'lexivox_dsa_profile_v1';
 
 const DEFAULT_PROFILE = {
-  userName: 'Studente',
+  userName: 'Alessio',
   diagnosticCompleted: false,
   currentLevel: 'Pre-A1',
   currentScore: 25, // 0 - 100

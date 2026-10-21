@@ -53,7 +53,6 @@ class LiveDialogueController {
   }
 
   render() {
-    const scenarios = aiService.getAvailableScenarios();
     const curLevel = configManager.profile.currentLevel;
     const targetMin = configManager.profile.dailyTargetMinutes;
     const todayMin = Math.round(configManager.profile.todayMinutesStudied);
@@ -62,18 +61,26 @@ class LiveDialogueController {
       <div class="conversation-layout">
         <!-- Main Chat Area -->
         <div class="chat-stage-card">
-          <!-- Chat Header -->
+          <!-- Chat Header: Adaptive Tutor & Learner Evolution -->
           <div class="chat-stage-header">
-            <div class="scenario-badge">
-              <span>🎭 Scenario:</span>
-              <select id="scenario-selector">
-                ${scenarios.map(s => `<option value="${s.key}" ${s.key === aiService.currentScenarioKey ? 'selected' : ''}>${s.name}</option>`).join('')}
-              </select>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #3a86ff, #8338ec); display: flex; align-items: center; justify-content: center; font-size: 22px; box-shadow: 0 0 15px rgba(58, 134, 255, 0.4); flex-shrink: 0;">
+                🧠
+              </div>
+              <div style="display: flex; flex-direction: column;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 16px; font-weight: 700; color: var(--text-primary);">David - Tutor Adattivo DSA</span>
+                  <span style="font-size: 11px; padding: 2px 8px; border-radius: 10px; background: rgba(6, 214, 160, 0.2); color: var(--accent-emerald); font-weight: 700;">Livello: ${curLevel}</span>
+                </div>
+                <span id="tutor-adaptive-focus" style="font-size: 13px; color: var(--accent-cyan); font-weight: 600;">
+                  ${aiService.getActiveLearningFocus()}
+                </span>
+              </div>
             </div>
 
             <div class="live-channel-status">
               <div id="live-status-dot" class="status-dot"></div>
-              <span id="live-status-text">Canale Vocale Attivo</span>
+              <span id="live-status-text">Canale Vocale Diretto</span>
             </div>
           </div>
 
@@ -194,7 +201,6 @@ class LiveDialogueController {
     const orbBtn = this.container.querySelector('#btn-voice-orb');
     const sendBtn = this.container.querySelector('#btn-send-text');
     const textInput = this.container.querySelector('#console-fallback-input');
-    const scenarioSelector = this.container.querySelector('#scenario-selector');
     const speedSelect = this.container.querySelector('#audio-speed-select');
     const autoReadCheck = this.container.querySelector('#check-auto-read');
 
@@ -222,17 +228,6 @@ class LiveDialogueController {
       sendBtn.addEventListener('click', () => this.handleTextSubmit());
       textInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') this.handleTextSubmit();
-      });
-    }
-
-    // Scenario switch
-    if (scenarioSelector) {
-      scenarioSelector.addEventListener('change', (e) => {
-        aiService.setScenario(e.target.value);
-        const messagesScroll = this.container.querySelector('#chat-messages-scroll');
-        if (messagesScroll) messagesScroll.innerHTML = '';
-        const greeting = aiService.getInitialGreeting();
-        this.appendMessage('ai', greeting.en, greeting.it);
       });
     }
 
@@ -328,6 +323,12 @@ class LiveDialogueController {
       if (errDef) {
         coachingHint = errDef.correctExample;
       }
+    }
+
+    // Update live adaptive tutor focus header
+    const focusEl = this.container.querySelector('#tutor-adaptive-focus');
+    if (focusEl) {
+      focusEl.textContent = aiService.getActiveLearningFocus();
     }
 
     // 2. Append User Message Bubble with Fluency & Coaching Hint

@@ -102,7 +102,7 @@ class DsaTools {
     this.currentUtterance = null;
   }
 
-  /* ---------------- STT Engine (Speech Recognition - DSA Unbreakable Continuous Engine) ---------------- */
+  /* ---------------- STT Engine (Speech Recognition - DSA Anti-Multiplication & Continuous Engine) ---------------- */
   initSpeechRecognition() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -111,11 +111,7 @@ class DsaTools {
     }
 
     this.SpeechRecognitionClass = SpeechRecognition;
-    this.recognition = new SpeechRecognition();
-    this.recognition.continuous = true;
-    this.recognition.interimResults = true;
-    this.recognition.lang = 'en-US';
-    this.recognition.maxAlternatives = 1;
+    this.recognition = null;
 
     // State tracking
     this.isListening = false;
@@ -128,9 +124,87 @@ class DsaTools {
     this.mediaStream = null;
   }
 
+  /* Robust Transcript Sanitizer: Removes duplicate identical phrases and adjacent stutter words */
+  sanitizeTranscript(str) {
+    if (!str) return '';
+    let text = str.trim();
+    if (!text) return '';
+
+    // 1. Remove duplicate multi-word phrases (e.g. "I went to London I went to London" -> "I went to London")
+    const words = text.split(/\s+/);
+    if (words.length >= 2) {
+      const resultWords = [];
+      let i = 0;
+      while (i < words.length) {
+        let matched = false;
+        // Check phrase lengths from 8 down to 2 words
+        const maxLen = Math.min(8, Math.floor((words.length - i) / 2));
+        for (let len = maxLen; len >= 2; len--) {
+          const phrase1 = words.slice(i, i + len).map(w => w.toLowerCase()).join(' ');
+          const phrase2 = words.slice(i + len, i + len * 2).map(w => w.toLowerCase()).join(' ');
+          if (phrase1 === phrase2) {
+            // Match found! Keep phrase1 once and skip phrase2
+            for (let k = 0; k < len; k++) {
+              resultWords.push(words[i + k]);
+            }
+            i += len * 2;
+            matched = true;
+            break;
+          }
+        }
+        if (!matched) {
+          resultWords.push(words[i]);
+          i++;
+        }
+      }
+
+      // 2. Remove duplicate adjacent single words (e.g. "the the", "my my name")
+      const dedupedSingle = [];
+      for (let j = 0; j < resultWords.length; j++) {
+        if (j === 0 || resultWords[j].toLowerCase() !== resultWords[j - 1].toLowerCase()) {
+          dedupedSingle.push(resultWords[j]);
+        }
+      }
+      text = dedupedSingle.join(' ');
+    }
+
+    return text.replace(/\s+/g, ' ').trim();
+  }
+
+  /* Smart Overlap Merger: Merges base text and incoming chunk without multiplying overlapping words */
+  mergeTranscripts(base, addition) {
+    base = (base || '').trim();
+    addition = (addition || '').trim();
+    if (!base) return addition;
+    if (!addition) return base;
+
+    // Direct subset checks
+    const baseLower = base.toLowerCase();
+    const addLower = addition.toLowerCase();
+    if (baseLower === addLower) return base;
+    if (baseLower.endsWith(addLower)) return base;
+    if (addLower.startsWith(baseLower)) return addition;
+
+    // Overlapping suffix/prefix check (e.g. "my name is" + "is Alessio" -> "my name is Alessio")
+    const baseWords = base.split(/\s+/);
+    const addWords = addition.split(/\s+/);
+    const maxOverlap = Math.min(baseWords.length, addWords.length);
+
+    for (let len = maxOverlap; len > 0; len--) {
+      const baseTail = baseWords.slice(baseWords.length - len).map(w => w.toLowerCase()).join(' ');
+      const addHead = addWords.slice(0, len).map(w => w.toLowerCase()).join(' ');
+      if (baseTail === addHead) {
+        const nonOverlapping = addWords.slice(len).join(' ');
+        return nonOverlapping ? `${base} ${nonOverlapping}` : base;
+      }
+    }
+
+    return `${base} ${addition}`;
+  }
+
   async startListening(onResult, onInterim, onError, onEnd) {
-    if (!this.recognition) {
-      if (typeof onError === 'function') onError('Microfono o browser non supporta il riconoscimento vocale. Usa la tastiera.');
+    if (!this.SpeechRecognitionClass) {
+      if (typeof onError === 'function') onError('Microfono non supportato in questo browser. Usa la tastiera.');
       return;
     }
 
@@ -165,18 +239,15 @@ class DsaTools {
       if (this.restartTimeout) clearTimeout(this.restartTimeout);
 
       if (this.currentPassFinal) {
-        this.confirmedSessionText = (this.confirmedSessionText + ' ' + this.currentPassFinal).trim();
+        this.confirmedSessionText = this.mergeTranscripts(this.confirmedSessionText, this.currentPassFinal);
         this.currentPassFinal = '';
       }
 
-      const textToSend = this.confirmedSessionText.trim();
+      const textToSend = this.sanitizeTranscript(this.confirmedSessionText);
       this.isSessionActive = false;
       this.isListening = false;
 
-      try {
-        this.recognition.stop();
-      } catch (e) {}
-
+      this.destroyRecognition();
       this.releaseMediaStream();
 
       if (textToSend && typeof this.onResultCb === 'function') {
@@ -188,139 +259,140 @@ class DsaTools {
     };
 
     this.manualCommit = commitAndSend;
-    this.bindRecognitionEvents(commitAndSend);
-
-    try {
-      this.recognition.start();
-    } catch (e) {
-      console.warn('[DSA STT] Recognition already started or retry:', e);
-      this.recreateRecognition(commitAndSend);
-    }
+    this.startFreshRecognitionPass(commitAndSend);
   }
 
-  bindRecognitionEvents(commitAndSend) {
-    this.recognition.onstart = () => {
-      this.isListening = true;
-      console.log('[DSA STT] Microfono attivo e in ascolto...');
-    };
-
-    this.recognition.onresult = (event) => {
-      let turnFinal = '';
-      let interimStr = '';
-
-      for (let i = 0; i < event.results.length; ++i) {
-        const item = event.results[i];
-        if (item && item[0]) {
-          const text = item[0].transcript;
-          if (item.isFinal) {
-            turnFinal += text + ' ';
-          } else {
-            interimStr += text;
-          }
-        }
-      }
-
-      this.currentPassFinal = turnFinal.trim();
-      const currentFullText = (this.confirmedSessionText + ' ' + this.currentPassFinal).trim();
-      const currentDisplay = (currentFullText + ' ' + interimStr).trim();
-
-      if (typeof this.onInterimCb === 'function') {
-        this.onInterimCb(currentDisplay);
-      }
-
-      // Reset generous 10s cognitive pause timer on every vocal utterance
-      if (this.silenceTimer) clearTimeout(this.silenceTimer);
-      if (currentFullText) {
-        this.silenceTimer = setTimeout(() => {
-          if (this.isSessionActive) {
-            console.log('[DSA STT] Pausa prolungata di 10s rilevata, invio automatico...');
-            commitAndSend();
-          }
-        }, this.SILENCE_DELAY_MS);
-      }
-    };
-
-    this.recognition.onerror = (event) => {
-      console.log('[DSA STT] Evento errore:', event.error);
-      if (event.error === 'no-speech') {
-        // Pausa di riflessione DSA: NON staccare la registrazione!
-        return;
-      }
-      if (event.error === 'aborted') {
-        // Normale durante i cicli di auto-riavvio, ignora
-        return;
-      }
-      if (event.error === 'network') {
-        // Lieve ritardo di rete con i server vocali Google, lasciamo riprovare onend
-        return;
-      }
-
-      // Solo in caso di rifiuto esplicito permessi o hardware assente
-      if (event.error === 'not-allowed' || event.error === 'service-not-allowed' || event.error === 'audio-capture') {
-        this.isSessionActive = false;
-        this.isListening = false;
-        this.releaseMediaStream();
-        if (typeof this.onErrorCb === 'function') {
-          this.onErrorCb('Permesso microfono negato o non disponibile.');
-        }
-        if (typeof this.onEndCb === 'function') {
-          this.onEndCb();
-        }
-      }
-    };
-
-    this.recognition.onend = () => {
-      console.log('[DSA STT] onend scattato. Sessione attiva:', this.isSessionActive);
-
-      // Salva il testo finora confermato in memoria
-      if (this.currentPassFinal) {
-        this.confirmedSessionText = (this.confirmedSessionText + ' ' + this.currentPassFinal).trim();
-        this.currentPassFinal = '';
-      }
-
-      // SE L'UTENTE STA ANCORA PARLANDO: NON STACCARE! Riavvia istantaneamente il microfono!
-      if (this.isSessionActive) {
-        clearTimeout(this.restartTimeout);
-        this.restartTimeout = setTimeout(() => {
-          if (this.isSessionActive) {
-            try {
-              this.recognition.start();
-              console.log('[DSA STT] Microfono riattivato in modo continuo.');
-            } catch (err) {
-              console.warn('[DSA STT] Riavvio rapido fallito, ricreo istanza SpeechRecognition...', err);
-              this.recreateRecognition(commitAndSend);
-            }
-          }
-        }, 80);
-        return;
-      }
-
-      // Se l'utente ha premuto "Ho Finito di Parlare" o Stop
-      this.isListening = false;
-      this.releaseMediaStream();
-      if (typeof this.onEndCb === 'function') {
-        this.onEndCb();
-      }
-    };
-  }
-
-  recreateRecognition(commitAndSend) {
+  startFreshRecognitionPass(commitAndSend) {
     if (!this.SpeechRecognitionClass || !this.isSessionActive) return;
+
+    // Always destroy any previous recognition instance so results NEVER accumulate in memory
+    this.destroyRecognition();
+
     try {
       this.recognition = new this.SpeechRecognitionClass();
       this.recognition.continuous = true;
       this.recognition.interimResults = true;
       this.recognition.lang = 'en-US';
       this.recognition.maxAlternatives = 1;
-      this.bindRecognitionEvents(commitAndSend);
+      this.currentPassFinal = '';
+
+      this.recognition.onstart = () => {
+        this.isListening = true;
+        console.log('[DSA STT] Nuova sessione microfono pulita e attiva...');
+      };
+
+      this.recognition.onresult = (event) => {
+        let passFinal = '';
+        let passInterim = '';
+
+        for (let i = 0; i < event.results.length; ++i) {
+          const item = event.results[i];
+          if (item && item[0]) {
+            const text = item[0].transcript;
+            if (item.isFinal) {
+              passFinal += text + ' ';
+            } else {
+              passInterim += text;
+            }
+          }
+        }
+
+        this.currentPassFinal = passFinal.trim();
+        const mergedFinal = this.mergeTranscripts(this.confirmedSessionText, this.currentPassFinal);
+        const mergedDisplay = this.mergeTranscripts(mergedFinal, passInterim.trim());
+        const cleanDisplay = this.sanitizeTranscript(mergedDisplay);
+
+        if (typeof this.onInterimCb === 'function') {
+          this.onInterimCb(cleanDisplay);
+        }
+
+        // Reset generous 10s cognitive pause timer on every vocal utterance
+        if (this.silenceTimer) clearTimeout(this.silenceTimer);
+        if (cleanDisplay) {
+          this.silenceTimer = setTimeout(() => {
+            if (this.isSessionActive) {
+              console.log('[DSA STT] Pausa di 10s rilevata, invio automatico...');
+              commitAndSend();
+            }
+          }, this.SILENCE_DELAY_MS);
+        }
+      };
+
+      this.recognition.onerror = (event) => {
+        console.log('[DSA STT] Evento errore:', event.error);
+        if (event.error === 'no-speech' || event.error === 'aborted' || event.error === 'network') {
+          // Pausa di riflessione o reset silenzioso: non abortire l'utente
+          return;
+        }
+
+        // Solo in caso di rifiuto esplicito permessi o hardware assente
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed' || event.error === 'audio-capture') {
+          this.isSessionActive = false;
+          this.isListening = false;
+          this.destroyRecognition();
+          this.releaseMediaStream();
+          if (typeof this.onErrorCb === 'function') {
+            this.onErrorCb('Permesso microfono negato o non disponibile.');
+          }
+          if (typeof this.onEndCb === 'function') {
+            this.onEndCb();
+          }
+        }
+      };
+
+      this.recognition.onend = () => {
+        console.log('[DSA STT] onend pass terminato. Sessione attiva:', this.isSessionActive);
+
+        // Salva il testo finora confermato in memoria senza duplicazioni
+        if (this.currentPassFinal) {
+          this.confirmedSessionText = this.mergeTranscripts(this.confirmedSessionText, this.currentPassFinal);
+          this.confirmedSessionText = this.sanitizeTranscript(this.confirmedSessionText);
+          this.currentPassFinal = '';
+        }
+
+        // SE L'UTENTE STA ANCORA PARLANDO: Riavvia con una NUOVA istanza fresca (buffer pulito)
+        if (this.isSessionActive) {
+          clearTimeout(this.restartTimeout);
+          this.restartTimeout = setTimeout(() => {
+            if (this.isSessionActive) {
+              this.startFreshRecognitionPass(commitAndSend);
+            }
+          }, 80);
+          return;
+        }
+
+        // Se l'utente ha premuto "Ho Finito di Parlare" o Stop
+        this.isListening = false;
+        this.destroyRecognition();
+        this.releaseMediaStream();
+        if (typeof this.onEndCb === 'function') {
+          this.onEndCb();
+        }
+      };
+
       this.recognition.start();
     } catch (e) {
-      console.warn('[DSA STT] Ricreazione fallita:', e);
-      setTimeout(() => {
-        if (this.isSessionActive) {
-          try { this.recognition.start(); } catch(err) {}
-        }
-      }, 250);
+      console.warn('[DSA STT] startFreshRecognitionPass eccezione:', e);
+      if (this.isSessionActive) {
+        setTimeout(() => {
+          if (this.isSessionActive) {
+            this.startFreshRecognitionPass(commitAndSend);
+          }
+        }, 200);
+      }
+    }
+  }
+
+  destroyRecognition() {
+    if (this.recognition) {
+      try {
+        this.recognition.onstart = null;
+        this.recognition.onresult = null;
+        this.recognition.onerror = null;
+        this.recognition.onend = null;
+        this.recognition.abort();
+      } catch (e) {}
+      this.recognition = null;
     }
   }
 

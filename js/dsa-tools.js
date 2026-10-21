@@ -102,49 +102,110 @@ class DsaTools {
     this.currentUtterance = null;
   }
 
-  /* ---------------- STT Engine (Speech Recognition - DSA Thinking-Guard) ---------------- */
+  /* ---------------- STT Engine (Speech Recognition - DSA Unbreakable Continuous Engine) ---------------- */
   initSpeechRecognition() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      console.warn('Web Speech API not supported in this browser. Fallback to text input.');
+      console.warn('Web Speech API non supportata in questo browser. Fallback su input testuale.');
       return;
     }
 
+    this.SpeechRecognitionClass = SpeechRecognition;
     this.recognition = new SpeechRecognition();
-    this.recognition.continuous = true; // Stay alive during cognitive pauses
+    this.recognition.continuous = true;
     this.recognition.interimResults = true;
     this.recognition.lang = 'en-US';
     this.recognition.maxAlternatives = 1;
-    this.accumulatedTranscript = '';
+
+    // State tracking
+    this.isListening = false;
+    this.isSessionActive = false;
+    this.confirmedSessionText = '';
+    this.currentPassFinal = '';
     this.silenceTimer = null;
-    this.SILENCE_DELAY_MS = 5000; // 5 seconds of silence before auto-submitting (generous for DSA)
+    this.restartTimeout = null;
+    this.SILENCE_DELAY_MS = 10000; // 10 seconds cognitive buffer: never interrupt DSA thought pauses
+    this.mediaStream = null;
   }
 
-  startListening(onResult, onInterim, onError, onEnd) {
+  async startListening(onResult, onInterim, onError, onEnd) {
     if (!this.recognition) {
-      if (onError) onError('Microfono o browser non supporta il riconoscimento vocale. Usa la tastiera.');
+      if (typeof onError === 'function') onError('Microfono o browser non supporta il riconoscimento vocale. Usa la tastiera.');
       return;
     }
 
     this.stopAudio(); // Silence any playing audio when user starts speaking
-    this.accumulatedTranscript = '';
-    if (this.silenceTimer) clearTimeout(this.silenceTimer);
 
-    this.recognition.onstart = () => {
-      this.isListening = true;
-    };
+    this.isSessionActive = true;
+    this.isListening = true;
+    this.confirmedSessionText = '';
+    this.currentPassFinal = '';
+    if (this.silenceTimer) clearTimeout(this.silenceTimer);
+    if (this.restartTimeout) clearTimeout(this.restartTimeout);
+
+    this.onResultCb = onResult;
+    this.onInterimCb = onInterim;
+    this.onErrorCb = onError;
+    this.onEndCb = onEnd;
+
+    // Keep audio hardware alive on mobile Chrome/Safari
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      try {
+        if (!this.mediaStream) {
+          this.mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        }
+      } catch (streamErr) {
+        console.warn('[DSA STT] MediaStream warning (proceeding):', streamErr);
+      }
+    }
 
     const commitAndSend = () => {
+      if (!this.isSessionActive) return;
       if (this.silenceTimer) clearTimeout(this.silenceTimer);
-      const textToSend = this.accumulatedTranscript.trim();
-      if (textToSend && typeof onResult === 'function') {
-        this.stopListening();
-        onResult(textToSend);
+      if (this.restartTimeout) clearTimeout(this.restartTimeout);
+
+      if (this.currentPassFinal) {
+        this.confirmedSessionText = (this.confirmedSessionText + ' ' + this.currentPassFinal).trim();
+        this.currentPassFinal = '';
+      }
+
+      const textToSend = this.confirmedSessionText.trim();
+      this.isSessionActive = false;
+      this.isListening = false;
+
+      try {
+        this.recognition.stop();
+      } catch (e) {}
+
+      this.releaseMediaStream();
+
+      if (textToSend && typeof this.onResultCb === 'function') {
+        this.onResultCb(textToSend);
+      }
+      if (typeof this.onEndCb === 'function') {
+        this.onEndCb();
       }
     };
 
+    this.manualCommit = commitAndSend;
+    this.bindRecognitionEvents(commitAndSend);
+
+    try {
+      this.recognition.start();
+    } catch (e) {
+      console.warn('[DSA STT] Recognition already started or retry:', e);
+      this.recreateRecognition(commitAndSend);
+    }
+  }
+
+  bindRecognitionEvents(commitAndSend) {
+    this.recognition.onstart = () => {
+      this.isListening = true;
+      console.log('[DSA STT] Microfono attivo e in ascolto...');
+    };
+
     this.recognition.onresult = (event) => {
-      let finalStr = '';
+      let turnFinal = '';
       let interimStr = '';
 
       for (let i = 0; i < event.results.length; ++i) {
@@ -152,63 +213,139 @@ class DsaTools {
         if (item && item[0]) {
           const text = item[0].transcript;
           if (item.isFinal) {
-            finalStr += text + ' ';
+            turnFinal += text + ' ';
           } else {
             interimStr += text;
           }
         }
       }
 
-      this.accumulatedTranscript = finalStr.trim();
-      const currentTotalDisplay = (finalStr + interimStr).trim();
-      if (typeof onInterim === 'function') {
-        onInterim(currentTotalDisplay);
+      this.currentPassFinal = turnFinal.trim();
+      const currentFullText = (this.confirmedSessionText + ' ' + this.currentPassFinal).trim();
+      const currentDisplay = (currentFullText + ' ' + interimStr).trim();
+
+      if (typeof this.onInterimCb === 'function') {
+        this.onInterimCb(currentDisplay);
       }
 
-      // Reset generous DSA thinking timer on every detected speech snippet
+      // Reset generous 10s cognitive pause timer on every vocal utterance
       if (this.silenceTimer) clearTimeout(this.silenceTimer);
-      if (this.accumulatedTranscript) {
+      if (currentFullText) {
         this.silenceTimer = setTimeout(() => {
-          commitAndSend();
+          if (this.isSessionActive) {
+            console.log('[DSA STT] Pausa prolungata di 10s rilevata, invio automatico...');
+            commitAndSend();
+          }
         }, this.SILENCE_DELAY_MS);
       }
     };
 
     this.recognition.onerror = (event) => {
+      console.log('[DSA STT] Evento errore:', event.error);
       if (event.error === 'no-speech') {
-        // Keep listening, do not abort on brief silence
+        // Pausa di riflessione DSA: NON staccare la registrazione!
         return;
       }
-      this.isListening = false;
-      if (this.silenceTimer) clearTimeout(this.silenceTimer);
-      if (typeof onError === 'function') onError(event.error);
+      if (event.error === 'aborted') {
+        // Normale durante i cicli di auto-riavvio, ignora
+        return;
+      }
+      if (event.error === 'network') {
+        // Lieve ritardo di rete con i server vocali Google, lasciamo riprovare onend
+        return;
+      }
+
+      // Solo in caso di rifiuto esplicito permessi o hardware assente
+      if (event.error === 'not-allowed' || event.error === 'service-not-allowed' || event.error === 'audio-capture') {
+        this.isSessionActive = false;
+        this.isListening = false;
+        this.releaseMediaStream();
+        if (typeof this.onErrorCb === 'function') {
+          this.onErrorCb('Permesso microfono negato o non disponibile.');
+        }
+        if (typeof this.onEndCb === 'function') {
+          this.onEndCb();
+        }
+      }
     };
 
     this.recognition.onend = () => {
-      // If stopped naturally but we have pending text that wasn't committed
-      if (this.isListening && this.accumulatedTranscript.trim()) {
-        commitAndSend();
+      console.log('[DSA STT] onend scattato. Sessione attiva:', this.isSessionActive);
+
+      // Salva il testo finora confermato in memoria
+      if (this.currentPassFinal) {
+        this.confirmedSessionText = (this.confirmedSessionText + ' ' + this.currentPassFinal).trim();
+        this.currentPassFinal = '';
       }
+
+      // SE L'UTENTE STA ANCORA PARLANDO: NON STACCARE! Riavvia istantaneamente il microfono!
+      if (this.isSessionActive) {
+        clearTimeout(this.restartTimeout);
+        this.restartTimeout = setTimeout(() => {
+          if (this.isSessionActive) {
+            try {
+              this.recognition.start();
+              console.log('[DSA STT] Microfono riattivato in modo continuo.');
+            } catch (err) {
+              console.warn('[DSA STT] Riavvio rapido fallito, ricreo istanza SpeechRecognition...', err);
+              this.recreateRecognition(commitAndSend);
+            }
+          }
+        }, 80);
+        return;
+      }
+
+      // Se l'utente ha premuto "Ho Finito di Parlare" o Stop
       this.isListening = false;
-      if (typeof onEnd === 'function') onEnd();
+      this.releaseMediaStream();
+      if (typeof this.onEndCb === 'function') {
+        this.onEndCb();
+      }
     };
+  }
 
-    this.manualCommit = () => {
-      commitAndSend();
-    };
-
+  recreateRecognition(commitAndSend) {
+    if (!this.SpeechRecognitionClass || !this.isSessionActive) return;
     try {
+      this.recognition = new this.SpeechRecognitionClass();
+      this.recognition.continuous = true;
+      this.recognition.interimResults = true;
+      this.recognition.lang = 'en-US';
+      this.recognition.maxAlternatives = 1;
+      this.bindRecognitionEvents(commitAndSend);
       this.recognition.start();
     } catch (e) {
-      console.warn('Recognition already started or error:', e);
+      console.warn('[DSA STT] Ricreazione fallita:', e);
+      setTimeout(() => {
+        if (this.isSessionActive) {
+          try { this.recognition.start(); } catch(err) {}
+        }
+      }, 250);
+    }
+  }
+
+  releaseMediaStream() {
+    if (this.mediaStream) {
+      try {
+        this.mediaStream.getTracks().forEach(t => t.stop());
+      } catch (e) {}
+      this.mediaStream = null;
     }
   }
 
   stopListening() {
+    this.isSessionActive = false;
+    this.isListening = false;
     if (this.silenceTimer) clearTimeout(this.silenceTimer);
-    if (this.recognition && this.isListening) {
-      this.recognition.stop();
-      this.isListening = false;
+    if (this.restartTimeout) clearTimeout(this.restartTimeout);
+    this.releaseMediaStream();
+    if (this.recognition) {
+      try {
+        this.recognition.stop();
+      } catch (e) {}
+    }
+    if (typeof this.onEndCb === 'function') {
+      this.onEndCb();
     }
   }
 

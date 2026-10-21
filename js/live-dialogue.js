@@ -295,8 +295,11 @@ class LiveDialogueController {
       orbBtn.innerHTML = '⏹️';
       if (statusDot) statusDot.className = 'status-dot listening';
       if (statusText) statusText.textContent = 'Ascolto la tua voce...';
-      if (consoleText) consoleText.innerHTML = '🎤 <strong>Ti ascolto senza fretta:</strong> prenditi il tempo per pensare!';
-      if (finishBtn) finishBtn.style.display = 'inline-flex';
+      if (consoleText) consoleText.innerHTML = '🎤 <strong>Ti ascolto:</strong> fai tutte le tue pause. Premi il tasto verde quando hai finito!';
+      if (finishBtn) {
+        finishBtn.style.display = 'inline-flex';
+        finishBtn.className = 'btn btn-accent btn-finish-recording';
+      }
     } else if (state === 'speaking') {
       orbBtn.classList.remove('recording');
       orbBtn.innerHTML = '🎙️';

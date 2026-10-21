@@ -344,6 +344,22 @@
   100% { transform: scale(2.2); opacity: 0; border-color: var(--accent-purple); }
 }
 
+/* Pulsating Green Finish Button - DSA Clear Affordance */
+.btn-finish-recording {
+  background: linear-gradient(135deg, #10b981, #059669) !important;
+  color: #ffffff !important;
+  border: 2px solid #34d399 !important;
+  font-weight: 800 !important;
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.6) !important;
+  animation: pulseFinishBtn 1.8s infinite ease-in-out !important;
+}
+
+@keyframes pulseFinishBtn {
+  0% { transform: scale(1); box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); }
+  50% { transform: scale(1.04); box-shadow: 0 0 24px rgba(16, 185, 129, 0.75); }
+  100% { transform: scale(1); box-shadow: 0 0 10px rgba(16, 185, 129, 0.4); }
+}
+
 /* Console Input Fallback / Speech Status */
 .console-content {
   flex: 1;

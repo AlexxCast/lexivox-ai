@@ -153,10 +153,13 @@ class DiagnosticEngine {
     const startRecording = () => {
       this.isRecording = true;
       micBtn.classList.add('recording');
-      micBtn.textContent = '⏹️ Sto Ascoltando...';
-      if (finishBtn) finishBtn.style.display = 'inline-flex';
+      micBtn.textContent = '⏹️ Parla Pure...';
+      if (finishBtn) {
+        finishBtn.style.display = 'inline-flex';
+        finishBtn.className = 'btn btn-accent btn-finish-recording';
+      }
       feedbackText.style.color = 'var(--accent-cyan)';
-      feedbackText.textContent = 'Ti sto ascoltando: parla con calma, fai le tue pause...';
+      feedbackText.textContent = '🎤 Ti sto ascoltando: fai tutte le pause di cui hai bisogno. Quando hai finito tocca il tasto verde!';
 
       dsaTools.startListening(
         (finalText) => {

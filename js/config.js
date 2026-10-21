@@ -18,6 +18,7 @@ const DEFAULT_PROFILE = {
   streakDays: 1,
   totalWordsLearned: 42,
   totalSpokenMinutes: 0,
+  speechLang: 'en-US',
   
   // Specific DSA accessibility preferences
   a11y: {

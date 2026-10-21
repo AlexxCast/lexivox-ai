@@ -5,21 +5,7 @@
  */
 
 import { configManager } from './config.js';
-
-// Core English Lexicon (Common functional & content vocabulary for fast verification)
-const COMMON_ENGLISH_WORDS = new Set([
-  'the', 'be', 'to', 'of', 'and', 'a', 'in', 'that', 'have', 'i', 'it', 'for', 'not', 'on', 'with', 'he', 'as', 'you',
-  'do', 'at', 'this', 'but', 'his', 'by', 'from', 'they', 'we', 'say', 'her', 'she', 'or', 'an', 'will', 'my', 'one',
-  'all', 'would', 'there', 'their', 'what', 'so', 'up', 'out', 'if', 'about', 'who', 'get', 'which', 'go', 'me', 'when',
-  'make', 'can', 'like', 'time', 'no', 'just', 'him', 'know', 'take', 'people', 'into', 'year', 'your', 'good', 'some',
-  'could', 'them', 'see', 'other', 'than', 'then', 'now', 'look', 'only', 'come', 'its', 'over', 'think', 'also', 'back',
-  'after', 'use', 'two', 'how', 'our', 'work', 'first', 'well', 'way', 'even', 'new', 'want', 'because', 'any', 'these',
-  'give', 'day', 'most', 'us', 'wake', 'morning', 'night', 'coffee', 'food', 'eat', 'drink', 'water', 'sleep', 'home',
-  'school', 'study', 'learn', 'english', 'speak', 'talk', 'listen', 'read', 'write', 'friend', 'family', 'car', 'train',
-  'bus', 'airport', 'hotel', 'city', 'country', 'today', 'yesterday', 'tomorrow', 'happy', 'sad', 'tired', 'busy', 'fine',
-  'yes', 'please', 'thank', 'thanks', 'hello', 'hi', 'bye', 'sorry', 'excuse', 'help', 'where', 'why', 'here', 'there',
-  'am', 'is', 'are', 'was', 'were', 'been', 'has', 'had', 'did', 'does', 'doing', 'went', 'bought', 'bought', 'saw'
-]);
+import { isEnglishWord } from './lexicon.js';
 
 class FluencyAnalyzer {
   constructor() {
@@ -78,15 +64,13 @@ class FluencyAnalyzer {
     // 4. Lexical English Verification (Catch random gibberish / nonsense)
     let recognizedCount = 0;
     for (const word of cleanTokens) {
-      // Check exact match or common morphological variations (-s, -ed, -ing)
-      const base = word.replace(/(s|ed|ing|ly)$/, '');
-      if (COMMON_ENGLISH_WORDS.has(word) || COMMON_ENGLISH_WORDS.has(base) || word.length <= 2) {
+      if (isEnglishWord(word)) {
         recognizedCount++;
       }
     }
 
     const englishRatio = wordCount > 0 ? recognizedCount / wordCount : 0;
-    const isValidEnglish = englishRatio >= 0.45;
+    const isValidEnglish = wordCount <= 3 ? recognizedCount >= 1 : (englishRatio >= 0.35 || recognizedCount >= 3);
 
     let pronunciationScore = 0;
     let fluencyRating = "Naturale";

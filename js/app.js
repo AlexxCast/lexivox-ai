@@ -241,11 +241,15 @@ class AppController {
         const geminiInput = document.getElementById('setting-gemini-key');
         const dailyTargetInput = document.getElementById('setting-daily-target');
         const studentNameInput = document.getElementById('setting-student-name');
+        const userLevelSel = document.getElementById('setting-user-level');
+        const speechLangSel = document.getElementById('setting-speech-lang');
 
         if (providerSel) providerSel.value = ai.provider || 'local';
         if (geminiInput) geminiInput.value = ai.geminiKey || '';
         if (dailyTargetInput) dailyTargetInput.value = configManager.profile.dailyTargetMinutes || 25;
-        if (studentNameInput) studentNameInput.value = configManager.profile.userName || 'Studente';
+        if (studentNameInput) studentNameInput.value = configManager.profile.userName || 'Alessio';
+        if (userLevelSel) userLevelSel.value = configManager.profile.currentLevel || 'A2 (Pre-Intermedio)';
+        if (speechLangSel) speechLangSel.value = configManager.profile.speechLang || 'en-US';
 
         modalBackdrop.classList.add('open');
       });
@@ -263,11 +267,15 @@ class AppController {
         const geminiInput = document.getElementById('setting-gemini-key');
         const dailyTargetInput = document.getElementById('setting-daily-target');
         const studentNameInput = document.getElementById('setting-student-name');
+        const userLevelSel = document.getElementById('setting-user-level');
+        const speechLangSel = document.getElementById('setting-speech-lang');
 
         if (providerSel) configManager.profile.aiConfig.provider = providerSel.value;
         if (geminiInput) configManager.profile.aiConfig.geminiKey = geminiInput.value.trim();
         if (dailyTargetInput) configManager.profile.dailyTargetMinutes = parseInt(dailyTargetInput.value, 10) || 25;
-        if (studentNameInput) configManager.profile.userName = studentNameInput.value.trim() || 'Studente';
+        if (studentNameInput) configManager.profile.userName = studentNameInput.value.trim() || 'Alessio';
+        if (userLevelSel && userLevelSel.value) configManager.profile.currentLevel = userLevelSel.value;
+        if (speechLangSel && speechLangSel.value) configManager.profile.speechLang = speechLangSel.value;
 
         configManager.save();
         modalBackdrop.classList.remove('open');

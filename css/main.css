@@ -485,3 +485,25 @@ body {
     font-size: 11px;
   }
 }
+
+/* Diagnostic Level Picker Buttons */
+.diag-pick-btn {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+.diag-pick-btn:hover {
+  background: rgba(58, 134, 255, 0.2);
+  border-color: var(--accent-blue);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+.diag-pick-btn.active-level {
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple)) !important;
+  color: #ffffff !important;
+  border-color: transparent !important;
+  box-shadow: 0 4px 14px rgba(58, 134, 255, 0.4);
+}

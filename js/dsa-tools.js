@@ -213,6 +213,7 @@ class DsaTools {
     this.isListening = true;
     this.confirmedSessionText = '';
     this.currentPassFinal = '';
+    this.latestRecognizedText = '';
     if (this.silenceTimer) clearTimeout(this.silenceTimer);
     if (this.restartTimeout) clearTimeout(this.restartTimeout);
 
@@ -231,7 +232,12 @@ class DsaTools {
         this.currentPassFinal = '';
       }
 
-      const textToSend = this.sanitizeTranscript(this.confirmedSessionText);
+      // Preserve full spoken transcript even if speech was still in interim state
+      let textToSend = (this.confirmedSessionText || '').trim();
+      if (this.latestRecognizedText && this.latestRecognizedText.trim().length > textToSend.length) {
+        textToSend = this.latestRecognizedText.trim();
+      }
+      textToSend = this.sanitizeTranscript(textToSend);
       this.isSessionActive = false;
       this.isListening = false;
 
@@ -259,7 +265,7 @@ class DsaTools {
       this.recognition = new this.SpeechRecognitionClass();
       this.recognition.continuous = true;
       this.recognition.interimResults = true;
-      this.recognition.lang = 'en-US';
+      this.recognition.lang = configManager.profile.speechLang || 'en-US';
       this.recognition.maxAlternatives = 1;
       this.currentPassFinal = '';
 
@@ -288,6 +294,7 @@ class DsaTools {
         const mergedFinal = this.mergeTranscripts(this.confirmedSessionText, this.currentPassFinal);
         const mergedDisplay = this.mergeTranscripts(mergedFinal, passInterim.trim());
         const cleanDisplay = this.sanitizeTranscript(mergedDisplay);
+        this.latestRecognizedText = cleanDisplay;
 
         if (typeof this.onInterimCb === 'function') {
           this.onInterimCb(cleanDisplay);

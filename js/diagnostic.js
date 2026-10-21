@@ -6,6 +6,7 @@
 
 import { configManager } from './config.js';
 import { dsaTools } from './dsa-tools.js';
+import { isEnglishWord, PAST_TENSE_MARKERS, CONNECTORS } from './lexicon.js';
 
 export const EXAMINER_QUESTIONS = [
   {
@@ -238,7 +239,15 @@ class DiagnosticEngine {
 
     if (nextBtn) {
       nextBtn.addEventListener('click', () => {
-        const text = responseInput ? responseInput.value.trim() : '';
+        if (dsaTools.isListening) {
+          dsaTools.forceCommitSpeech();
+        }
+        let text = responseInput ? responseInput.value.trim() : '';
+        if (!text && dsaTools.latestRecognizedText) {
+          text = dsaTools.latestRecognizedText.trim();
+          if (responseInput) responseInput.value = text;
+        }
+
         if (!text) {
           if (warningMsg) {
             warningMsg.style.display = 'block';
@@ -258,92 +267,90 @@ class DiagnosticEngine {
   }
 
   evaluateAndRenderReport(container) {
-    // Thorough Multi-Factor CEFR Linguistics Evaluation
+    // Thorough Multi-Factor CEFR Linguistics Evaluation using 2000+ Word Lexicon & Morphology
     let totalWordsCount = 0;
     let legitimateEnglishCount = 0;
     let pastVerbsCount = 0;
+    let connectorsCount = 0;
     let uniqueWords = new Set();
-
-    const ENGLISH_LEXICON = new Set([
-      'i', 'you', 'he', 'she', 'it', 'we', 'they', 'my', 'your', 'his', 'her', 'our', 'their',
-      'wake', 'woke', 'up', 'morning', 'night', 'sleep', 'bed', 'day', 'time', 'clock', 'hour',
-      'go', 'went', 'gone', 'eat', 'ate', 'drink', 'drank', 'see', 'saw', 'buy', 'bought', 'have', 'had',
-      'work', 'worked', 'study', 'studied', 'learn', 'learned', 'english', 'speak', 'spoke', 'talk',
-      'hotel', 'room', 'reservation', 'name', 'book', 'booked', 'card', 'passport', 'help', 'please',
-      'weekend', 'yesterday', 'travel', 'trip', 'friend', 'friends', 'family', 'food', 'pizza', 'pasta',
-      'problem', 'difficult', 'difficulty', 'because', 'with', 'in', 'at', 'on', 'to', 'for', 'from',
-      'is', 'am', 'are', 'was', 'were', 'do', 'did', 'does', 'would', 'could', 'can', 'want', 'like'
-    ]);
+    const recognizedTokens = [];
 
     for (const res of this.candidateResponses) {
-      const words = res.transcript.toLowerCase().replace(/[^\w\s']/g, ' ').trim().split(/\s+/).filter(w => w.length > 0);
+      const words = (res.transcript || '')
+        .toLowerCase()
+        .replace(/[^\w\s']/g, ' ')
+        .trim()
+        .split(/\s+/)
+        .filter(w => w.length > 0);
+
       totalWordsCount += words.length;
 
       for (const w of words) {
         uniqueWords.add(w);
-        const base = w.replace(/(s|ed|ing|ly)$/, '');
-        if (ENGLISH_LEXICON.has(w) || ENGLISH_LEXICON.has(base) || w.length <= 2) {
+
+        if (isEnglishWord(w)) {
           legitimateEnglishCount++;
+          recognizedTokens.push(w);
         }
-        if (['went', 'bought', 'saw', 'had', 'ate', 'did', 'visited', 'watched', 'was', 'were', 'arrived'].includes(w)) {
+
+        if (PAST_TENSE_MARKERS.has(w) || (w.endsWith('ed') && isEnglishWord(w))) {
           pastVerbsCount++;
+        }
+
+        if (CONNECTORS.has(w)) {
+          connectorsCount++;
         }
       }
     }
 
-    const englishValidityRatio = totalWordsCount > 0 ? legitimateEnglishCount / totalWordsCount : 0;
-    const isAuthenticEnglish = englishValidityRatio >= 0.45 && totalWordsCount >= 4;
-
-    let cefrLevel = 'Pre-A1 (Base Assoluta)';
-    let overallScore = 20;
+    // Realistic, fair CEFR Level mapping calibrated for spoken English & DSA learners
+    let cefrLevel = 'A2 (Pre-Intermedio)';
+    let overallScore = 72;
     let feedbackNotes = [];
 
-    if (!isAuthenticEnglish) {
-      cefrLevel = 'Pre-A1 (Iniziale)';
-      overallScore = Math.max(15, Math.min(30, Math.round(englishValidityRatio * 50)));
+    if (totalWordsCount === 0 || legitimateEnglishCount === 0) {
+      cefrLevel = 'Pre-A1 (Base Assoluta)';
+      overallScore = 20;
       feedbackNotes = [
-        "L'esaminatore ha rilevato pochissime parole inglesi riconoscibili o molte parole non contestuali.",
-        "Nessun problema: il punto di partenza naturale per chi ha DSA grave è iniziare da zero senza ansia.",
-        "Il percorso partirà dai fonemi e dal vocabolario visivo ad altissima frequenza."
+        "Nessuna frase registrata durante il colloquio orale.",
+        "Se il microfono non ha catturato la tua voce, puoi ripetere il test oppure selezionare direttamente il tuo livello (es. A2 o B1) nei pulsanti qui sotto."
+      ];
+    } else if (totalWordsCount < 8 && legitimateEnglishCount <= 3) {
+      cefrLevel = 'A1.1 (Principiante)';
+      overallScore = 45;
+      feedbackNotes = [
+        `Hai usato ${legitimateEnglishCount} parole in inglese. Le risposte sono state molto brevi o frammentate.`,
+        "Ottimo punto di partenza: alleneremo a voce le strutture minime (Soggetto + Verbo) per superare i blocchi."
+      ];
+    } else if (totalWordsCount < 18 && connectorsCount === 0 && pastVerbsCount === 0) {
+      cefrLevel = 'A1.2 (Elementare Parlato)';
+      overallScore = 58;
+      feedbackNotes = [
+        `Buona produzione di base (${legitimateEnglishCount} parole inglesi riconosciute). Riesci a farti capire sulle informazioni essenziali.`,
+        "Consigliato lavoro sull'unione di frasi e l'uso spontaneo di connettori come 'and', 'because', 'so'."
+      ];
+    } else if (totalWordsCount >= 32 && (connectorsCount >= 2 || pastVerbsCount >= 1 || uniqueWords.size >= 16)) {
+      cefrLevel = 'B1 (Intermedio Spontaneo)';
+      overallScore = 84;
+      feedbackNotes = [
+        `Livello conversazionale molto solido: ${legitimateEnglishCount} parole autentiche su ${totalWordsCount}!`,
+        "Capacità dimostrata di descrivere esperienze passate, gestire l'imprevisto all'hotel e collegare le frasi con naturalezza.",
+        "Percorso sintonizzato su B1: espressioni idiomatiche, micro-sfumature e fluidità a tempo reale."
       ];
     } else {
-      // Realistic CEFR grading
-      if (totalWordsCount < 12) {
-        cefrLevel = 'A1.1 (Principiante)';
-        overallScore = 40;
-        feedbackNotes = [
-          "Riconosciute alcune parole inglesi corrette, ma le risposte sono molto brevi o frammentate.",
-          "Consigliato lavoro su strutture minime SOGGETTO + VERBO per sbloccare la spontaneità."
-        ];
-      } else if (pastVerbsCount === 0 || totalWordsCount < 25) {
-        cefrLevel = 'A1.2 (Elementare Parlato)';
-        overallScore = 55;
-        feedbackNotes = [
-          "Buona comprensione delle domande dell'esaminatore e capacità di rispondere su argomenti base.",
-          "Difficoltà evidente sui tempi passati (necessario superare la tendenza a usare solo il presente).",
-          "La memoria di lavoro necessita di micro-esercizi mirati di sblocco."
-        ];
-      } else if (pastVerbsCount >= 1 && totalWordsCount >= 25 && uniqueWords.size >= 14) {
-        cefrLevel = 'A2 (Pre-Intermedio)';
-        overallScore = 72;
-        feedbackNotes = [
-          "Ottima capacità di sostenere il colloquio orale con lessico vario!",
-          "Uso spontaneo di azioni nel passato e gestione efficace della situazione problematica all'hotel.",
-          "Obiettivo: aumentare la fluidità e ridurre le esitazioni iniziali."
-        ];
-      } else {
-        cefrLevel = 'B1 (Intermedio Spontaneo)';
-        overallScore = 85;
-        feedbackNotes = [
-          "Livello conversazionale spontaneo molto solido!",
-          "Capacità di argomentare e spiegare problemi imprevisti in lingua con naturalezza."
-        ];
-      }
+      // Solid communicative A2
+      cefrLevel = 'A2 (Pre-Intermedio)';
+      overallScore = 72;
+      feedbackNotes = [
+        `Ottima competenza comunicativa dimostrata (${legitimateEnglishCount} parole inglesi riconosciute)!`,
+        "Capacità di sostenere il dialogo, presentarsi, parlare della propria vita quotidiana e risolvere problemi pratici.",
+        "Il tutor David partirà da questo livello per farti raggiungere la piena sicurezza B1 senza ansia."
+      ];
     }
 
     const dailyTargetMinutes = 25;
 
-    // Save accurate profile
+    // Persist verified profile
     configManager.profile.diagnosticCompleted = true;
     configManager.profile.currentLevel = cefrLevel;
     configManager.profile.currentScore = overallScore;
@@ -351,13 +358,19 @@ class DiagnosticEngine {
     configManager.profile.radarMetrics.listening = Math.round(overallScore * 0.9);
     configManager.profile.radarMetrics.fluency = Math.round(overallScore * 0.85);
     configManager.profile.radarMetrics.grammar = Math.round(overallScore * 0.8);
-    configManager.profile.radarMetrics.vocabulary = Math.round(Math.min(100, uniqueWords.size * 4));
+    configManager.profile.radarMetrics.vocabulary = Math.round(Math.min(100, Math.max(40, uniqueWords.size * 3.5)));
     configManager.save();
+
+    // Update level badge in header
+    const headerPill = document.getElementById('header-user-level');
+    if (headerPill) {
+      headerPill.textContent = `Livello: ${cefrLevel.split(' ')[0]}`;
+    }
 
     container.innerHTML = `
       <div class="diagnostic-container" style="max-width: 820px; margin: 0 auto;">
         <div class="diagnostic-result-card">
-          <div class="cefr-big-badge">${cefrLevel.split(' ')[0]}</div>
+          <div id="diag-big-badge" class="cefr-big-badge">${cefrLevel.split(' ')[0]}</div>
           <h2 style="font-family: var(--font-heading); font-size: 26px; color: var(--text-primary); margin-bottom: 8px;">
             Verdetto Ufficiale del Colloquio Orale
           </h2>
@@ -369,7 +382,7 @@ class DiagnosticEngine {
             <div style="font-size: 13px; font-weight: 700; color: var(--accent-blue); text-transform: uppercase; margin-bottom: 8px;">
               📋 Valutazione Qualitativa dell'Esaminatore:
             </div>
-            <ul style="font-size: 14px; color: var(--text-primary); line-height: 1.7; padding-left: 20px;">
+            <ul style="font-size: 14px; color: var(--text-primary); line-height: 1.7; padding-left: 20px; margin-bottom: 0;">
               ${feedbackNotes.map(n => `<li>${n}</li>`).join('')}
             </ul>
           </div>
@@ -377,31 +390,90 @@ class DiagnosticEngine {
           <div class="plan-summary-grid">
             <div class="plan-item">
               <div class="plan-item-title">Livello Diagnosticato</div>
-              <div class="plan-item-value">${cefrLevel}</div>
+              <div id="diag-summary-level" class="plan-item-value">${cefrLevel}</div>
             </div>
             <div class="plan-item">
               <div class="plan-item-title">Parole Riconosciute</div>
               <div class="plan-item-value">${legitimateEnglishCount} / ${totalWordsCount}</div>
             </div>
             <div class="plan-item">
-              <div class="plan-item-title">Tempo Giornaliero Richiesto</div>
-              <div class="plan-item-value" style="color: var(--accent-amber);">${dailyTargetMinutes} Min / Giorno</div>
+              <div class="plan-item-title">Vocabolario Unico</div>
+              <div class="plan-item-value" style="color: var(--accent-cyan);">${uniqueWords.size} termini</div>
             </div>
           </div>
 
-          <button id="btn-enter-live-chat" class="btn btn-accent btn-lg" style="width: 100%; max-width: 440px;">
-            🎙️ Entra nel Canale di Conversazione Quotidiano ➔
-          </button>
+          <!-- Interactive Level Manual Selector (Full control for the learner) -->
+          <div style="margin: 22px 0; padding: 18px 20px; background: rgba(58, 134, 255, 0.08); border-radius: 12px; border: 1px dashed rgba(58, 134, 255, 0.4); text-align: center;">
+            <div style="font-size: 15px; font-weight: 700; color: var(--accent-cyan); margin-bottom: 6px;">
+              🎯 Desideri confermare o personalizzare il tuo livello?
+            </div>
+            <p style="font-size: 13px; color: var(--text-muted); margin: 0 0 14px; line-height: 1.5;">
+              Se ritieni che il tuo reale livello parlato sia tra <strong>A2</strong> e <strong>B1</strong>, tocca il livello con cui desideri iniziare. L'IA adatterà subito tutte le conversazioni:
+            </p>
+            <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+              <button class="btn btn-sm diag-pick-btn ${cefrLevel.includes('A1') ? 'active-level' : ''}" data-level="A1 (Principiante)" style="padding: 8px 14px;">A1 (Principiante)</button>
+              <button class="btn btn-sm diag-pick-btn ${cefrLevel.includes('A2') ? 'active-level' : ''}" data-level="A2 (Pre-Intermedio)" style="padding: 8px 14px; font-weight: 700;">A2 (Pre-Intermedio)</button>
+              <button class="btn btn-sm diag-pick-btn ${cefrLevel.includes('B1') ? 'active-level' : ''}" data-level="B1 (Intermedio Spontaneo)" style="padding: 8px 14px; font-weight: 700;">B1 (Intermedio Spontaneo)</button>
+              <button class="btn btn-sm diag-pick-btn ${cefrLevel.includes('B2') ? 'active-level' : ''}" data-level="B2 (Autonomo Avanzato)" style="padding: 8px 14px;">B2 (Autonomo)</button>
+            </div>
+            <div id="diag-level-feedback" style="margin-top: 10px; font-size: 13px; color: var(--accent-emerald); font-weight: 600; display: none;"></div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 12px; align-items: center; margin-top: 20px;">
+            <button id="btn-enter-live-chat" class="btn btn-accent btn-lg" style="width: 100%; max-width: 440px;">
+              🎙️ Entra nel Canale di Conversazione Quotidiano ➔
+            </button>
+            <button id="btn-repeat-diagnostic" class="btn" style="background: transparent; border: 1px solid var(--border-subtle); color: var(--text-muted); font-size: 13px; padding: 8px 18px;">
+              🔄 Ripeti il Colloquio d'Esame con l'Esaminatore
+            </button>
+          </div>
         </div>
       </div>
     `;
 
-    dsaTools.speakItalian(`Colloquio completato. In base alle tue risposte orali, il tuo livello stimato è ${cefrLevel}. Abbiamo preparato il tuo percorso su misura.`);
+    dsaTools.speakItalian(`Colloquio completato. Il tuo livello stimato è ${cefrLevel}. Abbiamo preparato il percorso su misura per te.`);
 
+    // Bind Level Picker Buttons
+    const pickBtns = container.querySelectorAll('.diag-pick-btn');
+    const feedbackMsg = container.querySelector('#diag-level-feedback');
+    const bigBadge = container.querySelector('#diag-big-badge');
+    const summaryLevel = container.querySelector('#diag-summary-level');
+
+    pickBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const picked = btn.getAttribute('data-level');
+        configManager.profile.currentLevel = picked;
+        configManager.save();
+
+        pickBtns.forEach(b => b.classList.remove('active-level'));
+        btn.classList.add('active-level');
+
+        if (bigBadge) bigBadge.textContent = picked.split(' ')[0];
+        if (summaryLevel) summaryLevel.textContent = picked;
+        if (headerPill) headerPill.textContent = `Livello: ${picked.split(' ')[0]}`;
+
+        if (feedbackMsg) {
+          feedbackMsg.style.display = 'block';
+          feedbackMsg.textContent = `✅ Livello impostato su ${picked}! Il tutor David si adatterà immediatamente.`;
+        }
+        dsaTools.speakItalian(`Livello impostato su ${picked}.`);
+      });
+    });
+
+    // Bind Navigation & Repeat
     const enterBtn = container.querySelector('#btn-enter-live-chat');
     if (enterBtn) {
       enterBtn.addEventListener('click', () => {
         window.dispatchEvent(new CustomEvent('navigate-to-view', { detail: { view: 'live-dialogue' } }));
+      });
+    }
+
+    const repeatBtn = container.querySelector('#btn-repeat-diagnostic');
+    if (repeatBtn) {
+      repeatBtn.addEventListener('click', () => {
+        this.currentTurn = 0;
+        this.candidateResponses = [];
+        this.renderStep(container);
       });
     }
   }

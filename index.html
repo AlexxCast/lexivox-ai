@@ -107,7 +107,27 @@
 
       <div class="a11y-option-group">
         <label class="a11y-option-label" for="setting-student-name">Tuo Nome (per il Certificato):</label>
-        <input type="text" id="setting-student-name" class="console-text-input" style="width: 100%;" value="Studente" />
+        <input type="text" id="setting-student-name" class="console-text-input" style="width: 100%;" value="Alessio" />
+      </div>
+
+      <div class="a11y-option-group">
+        <label class="a11y-option-label" for="setting-user-level">Livello CEFR Attuale (Adatta le Lezioni):</label>
+        <select id="setting-user-level" class="console-text-input" style="width: 100%;">
+          <option value="Pre-A1 (Base Assoluta)">Pre-A1 (Base Assoluta - Fonemi e Vocabolario Base)</option>
+          <option value="A1 (Principiante)">A1 (Principiante - Frasi Minime e Routine)</option>
+          <option value="A2 (Pre-Intermedio)">A2 (Pre-Intermedio - Dialogo Quotidiano e Passato)</option>
+          <option value="B1 (Intermedio Spontaneo)">B1 (Intermedio Spontaneo - Fluidità e Problem Solving)</option>
+          <option value="B2 (Autonomo Avanzato)">B2 (Intermedio Superiore / Autonomo)</option>
+        </select>
+        <span style="font-size: 11px; color: var(--accent-cyan); display: block; margin-top: 4px;">Puoi impostare direttamente A2 o B1 in qualsiasi momento per calibrare il tutor David.</span>
+      </div>
+
+      <div class="a11y-option-group">
+        <label class="a11y-option-label" for="setting-speech-lang">Accento Microfono (Riconoscimento Vocale):</label>
+        <select id="setting-speech-lang" class="console-text-input" style="width: 100%;">
+          <option value="en-US">Inglese Internazionale / US (Consigliato)</option>
+          <option value="en-GB">Inglese UK / Europeo</option>
+        </select>
       </div>
 
       <div class="a11y-option-group">
@@ -207,7 +227,7 @@
             ☰
           </button>
           <h2 id="page-header-title" class="page-title">🎙️ Canale Vocale Live</h2>
-          <span id="app-version-badge" style="font-size: 11px; padding: 2px 7px; border-radius: 8px; background: rgba(58, 134, 255, 0.2); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.4); font-weight: 700; margin-left: 8px;">v2.5 Hyper-Adaptive AI</span>
+          <span id="app-version-badge" style="font-size: 11px; padding: 2px 7px; border-radius: 8px; background: rgba(58, 134, 255, 0.2); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.4); font-weight: 700; margin-left: 8px;">v2.6 A2/B1 Diagnostic & Speech Fix</span>
         </div>
 
         <div class="header-actions">
@@ -254,6 +274,6 @@
   </div>
 
   <!-- Entry Script (ES Modules) -->
-  <script type="module" src="js/app.js?v=2.5"></script>
+  <script type="module" src="js/app.js?v=2.6"></script>
 </body>
 </html>

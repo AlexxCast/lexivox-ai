@@ -50,11 +50,28 @@ class AppController {
 
   initNavigation() {
     const navButtons = document.querySelectorAll('.nav-btn');
+    const sidebar = document.querySelector('.app-sidebar');
+    const toggleSidebarBtn = document.getElementById('btn-toggle-sidebar');
+
+    if (toggleSidebarBtn && sidebar) {
+      toggleSidebarBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        sidebar.classList.toggle('mobile-open');
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!sidebar.contains(e.target) && e.target !== toggleSidebarBtn) {
+          sidebar.classList.remove('mobile-open');
+        }
+      });
+    }
+
     navButtons.forEach(btn => {
       btn.addEventListener('click', (e) => {
         const targetView = btn.getAttribute('data-view');
         if (targetView) {
           this.switchView(targetView);
+          if (sidebar) sidebar.classList.remove('mobile-open');
         }
       });
     });

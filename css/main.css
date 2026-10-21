@@ -446,3 +446,42 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
 }
+
+/* Mobile Responsive Drawer & Full-Width Chat */
+@media (max-width: 850px) {
+  :root {
+    --sidebar-width: 0px;
+  }
+  .app-sidebar {
+    transform: translateX(-100%);
+    width: 280px !important;
+    box-shadow: 0 0 50px rgba(0,0,0,0.85);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1000;
+  }
+  .app-sidebar.mobile-open {
+    transform: translateX(0) !important;
+  }
+  .app-main {
+    margin-left: 0 !important;
+    width: 100% !important;
+    min-width: 0;
+  }
+  .app-header {
+    padding: 0 14px;
+  }
+  .stage-content {
+    padding: 14px 8px;
+  }
+  .page-title {
+    font-size: 16px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;
+  }
+  .user-level-pill {
+    padding: 4px 10px;
+    font-size: 11px;
+  }
+}

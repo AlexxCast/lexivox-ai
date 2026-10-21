@@ -144,29 +144,30 @@ class DsaTools {
     };
 
     this.recognition.onresult = (event) => {
-      let interim = '';
-      let newFinal = '';
+      let finalStr = '';
+      let interimStr = '';
 
-      for (let i = event.resultIndex; i < event.results.length; ++i) {
-        if (event.results[i].isFinal) {
-          newFinal += event.results[i][0].transcript + ' ';
-        } else {
-          interim += event.results[i][0].transcript;
+      for (let i = 0; i < event.results.length; ++i) {
+        const item = event.results[i];
+        if (item && item[0]) {
+          const text = item[0].transcript;
+          if (item.isFinal) {
+            finalStr += text + ' ';
+          } else {
+            interimStr += text;
+          }
         }
       }
 
-      if (newFinal) {
-        this.accumulatedTranscript += newFinal;
-      }
-
-      const currentTotalDisplay = (this.accumulatedTranscript + interim).trim();
+      this.accumulatedTranscript = finalStr.trim();
+      const currentTotalDisplay = (finalStr + interimStr).trim();
       if (typeof onInterim === 'function') {
         onInterim(currentTotalDisplay);
       }
 
       // Reset generous DSA thinking timer on every detected speech snippet
       if (this.silenceTimer) clearTimeout(this.silenceTimer);
-      if (this.accumulatedTranscript.trim()) {
+      if (this.accumulatedTranscript) {
         this.silenceTimer = setTimeout(() => {
           commitAndSend();
         }, this.SILENCE_DELAY_MS);

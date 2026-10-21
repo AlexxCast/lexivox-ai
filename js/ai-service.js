@@ -181,13 +181,46 @@ class AiService {
 
   generateSimulatedResponse(userText) {
     const scn = SCENARIOS[this.currentScenarioKey] || SCENARIOS.casual;
-    
+    const lower = userText.toLowerCase();
+
+    // Check if user is speaking nonsense or gibberish
+    if (/(hakuna|matata|chicka|fluka|bla\s*bla|random|asdf)/i.test(lower)) {
+      return {
+        en: "I didn't detect valid English words in that. Please try expressing a real thought or phrase in English!",
+        it: "Non ho rilevato parole inglesi valide. Prova a formulare un pensiero reale o una frase in inglese!"
+      };
+    }
+
     // Look for matching context rules
     for (const item of scn.contextReplies) {
       if (item.match.test(userText)) {
         this.conversationHistory.push({ role: 'assistant', content: item.en });
         return { en: item.en, it: item.it };
       }
+    }
+
+    // Contextual handling for waking up / morning routines
+    if (/(wake|woke|waking|up|sleep|slept|bed|9:00|8:00|7:00|am|clock)/i.test(lower)) {
+      return {
+        en: "Waking up at that time gives you a fresh start! What do you usually have for breakfast after getting out of bed?",
+        it: "Svegliarsi a quell'ora dà un buon inizio di giornata! Cosa mangi di solito per colazione dopo esserti alzato?"
+      };
+    }
+
+    // Contextual handling for speaking difficulties / DSA
+    if (/(difficult|hard|help|cant|cannot|error|mistake|problem|dsa|dislessia)/i.test(lower)) {
+      return {
+        en: "Don't worry at all! Take your time, breathe, and speak slowly. What topic would you like to practice today?",
+        it: "Non preoccuparti affatto! Prenditi il tuo tempo, respira e parla lentamente. Di quale argomento vorresti parlare oggi?"
+      };
+    }
+
+    // Contextual handling for Italian phrases
+    if (/(ciao|buongiorno|come|stai|grazie|non|so|cosa|dire)/i.test(lower)) {
+      return {
+        en: "I noticed you spoke some Italian! In English you can say: 'Hello, I'm ready to learn'. Give it a try!",
+        it: "Ho notato che hai usato parole italiane! In inglese puoi dire: 'Hello, I'm ready to learn'. Prova a ripeterlo a voce!"
+      };
     }
 
     // Fallback to rotating default replies

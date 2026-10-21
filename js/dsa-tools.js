@@ -123,13 +123,49 @@ class DsaTools {
     this.SILENCE_DELAY_MS = 10000; // 10 seconds cognitive buffer: never interrupt DSA thought pauses
   }
 
-  /* Robust Transcript Sanitizer: Removes duplicate identical phrases and adjacent stutter words */
+  /* Progressive Substring Deduper: Catches repeating progressive prefixes anywhere in the text */
+  removeProgressiveSubstrings(text) {
+    if (!text || typeof text !== 'string') return '';
+    let words = text.trim().split(/\s+/);
+    if (words.length < 3) return text;
+
+    let changed = true;
+    let guard = 0;
+    while (changed && guard < 25) {
+      guard++;
+      changed = false;
+
+      for (let i = 0; i < words.length - 2; i++) {
+        const remainingLen = words.length - i;
+        const maxK = Math.min(25, Math.floor(remainingLen / 2));
+        for (let k = maxK; k >= 2; k--) {
+          const phraseA = words.slice(i, i + k).map(w => w.toLowerCase()).join(' ');
+          const phraseAfter = words.slice(i + k).map(w => w.toLowerCase()).join(' ');
+
+          if (phraseAfter.startsWith(phraseA)) {
+            // words[i ... i+k-1] was an earlier progressive snapshot of what follows. Remove redundant prefix!
+            words.splice(i, k);
+            changed = true;
+            break;
+          }
+        }
+        if (changed) break;
+      }
+    }
+
+    return words.join(' ');
+  }
+
+  /* Robust Transcript Sanitizer: Removes progressive prefix repetitions, duplicate phrases, and stutter words */
   sanitizeTranscript(str) {
     if (!str) return '';
     let text = str.trim();
     if (!text) return '';
 
-    // 1. Remove duplicate multi-word phrases (e.g. "I went to London I went to London" -> "I went to London")
+    // 1. First eliminate any progressive prefix stutter
+    text = this.removeProgressiveSubstrings(text);
+
+    // 2. Remove duplicate identical multi-word phrases (e.g. "I went to London I went to London" -> "I went to London")
     const words = text.split(/\s+/);
     if (words.length >= 2) {
       const resultWords = [];
@@ -157,7 +193,7 @@ class DsaTools {
         }
       }
 
-      // 2. Remove duplicate adjacent single words (e.g. "the the", "my my name")
+      // 3. Remove duplicate adjacent single words (e.g. "the the", "my my name")
       const dedupedSingle = [];
       for (let j = 0; j < resultWords.length; j++) {
         if (j === 0 || resultWords[j].toLowerCase() !== resultWords[j - 1].toLowerCase()) {
@@ -170,6 +206,55 @@ class DsaTools {
     return text.replace(/\s+/g, ' ').trim();
   }
 
+  /* Merges a speech chunk into a streaming array of chunks, preventing cumulative extensions and multiplications */
+  mergeChunkIntoStream(stream, newChunk) {
+    if (!newChunk || typeof newChunk !== 'string') return;
+    const cleanChunk = newChunk.trim().replace(/\s+/g, ' ');
+    if (!cleanChunk) return;
+
+    if (stream.length === 0) {
+      stream.push(cleanChunk);
+      return;
+    }
+
+    const lastIdx = stream.length - 1;
+    const prev = stream[lastIdx];
+    const prevLower = prev.toLowerCase().trim();
+    const currLower = cleanChunk.toLowerCase().trim();
+
+    // 1. Identical check
+    if (prevLower === currLower) return;
+
+    // 2. Cumulative prefix extension (e.g. "you can do" followed by "you can do another")
+    if (currLower.startsWith(prevLower)) {
+      stream[lastIdx] = cleanChunk;
+      return;
+    }
+
+    // 3. Stale partial (e.g. "you can do another" followed by "you can do")
+    if (prevLower.startsWith(currLower) || prevLower.endsWith(currLower)) {
+      return;
+    }
+
+    // 4. Overlapping boundary words (e.g. "I work in" + "in Rome Italy" -> "I work in Rome Italy")
+    const prevWords = prev.split(/\s+/);
+    const currWords = cleanChunk.split(/\s+/);
+    const maxOverlap = Math.min(prevWords.length, currWords.length);
+
+    for (let len = maxOverlap; len > 0; len--) {
+      const tail = prevWords.slice(prevWords.length - len).map(w => w.toLowerCase()).join(' ');
+      const head = currWords.slice(0, len).map(w => w.toLowerCase()).join(' ');
+      if (tail === head) {
+        const nonOverlapping = currWords.slice(len).join(' ');
+        stream[lastIdx] = nonOverlapping ? `${prev} ${nonOverlapping}` : prev;
+        return;
+      }
+    }
+
+    // 5. Completely separate phrase
+    stream.push(cleanChunk);
+  }
+
   /* Smart Overlap Merger: Merges base text and incoming chunk without multiplying overlapping words */
   mergeTranscripts(base, addition) {
     base = (base || '').trim();
@@ -177,28 +262,9 @@ class DsaTools {
     if (!base) return addition;
     if (!addition) return base;
 
-    // Direct subset checks
-    const baseLower = base.toLowerCase();
-    const addLower = addition.toLowerCase();
-    if (baseLower === addLower) return base;
-    if (baseLower.endsWith(addLower)) return base;
-    if (addLower.startsWith(baseLower)) return addition;
-
-    // Overlapping suffix/prefix check (e.g. "my name is" + "is Alessio" -> "my name is Alessio")
-    const baseWords = base.split(/\s+/);
-    const addWords = addition.split(/\s+/);
-    const maxOverlap = Math.min(baseWords.length, addWords.length);
-
-    for (let len = maxOverlap; len > 0; len--) {
-      const baseTail = baseWords.slice(baseWords.length - len).map(w => w.toLowerCase()).join(' ');
-      const addHead = addWords.slice(0, len).map(w => w.toLowerCase()).join(' ');
-      if (baseTail === addHead) {
-        const nonOverlapping = addWords.slice(len).join(' ');
-        return nonOverlapping ? `${base} ${nonOverlapping}` : base;
-      }
-    }
-
-    return `${base} ${addition}`;
+    const stream = [base];
+    this.mergeChunkIntoStream(stream, addition);
+    return stream.join(' ').trim();
   }
 
   startListening(onResult, onInterim, onError, onEnd) {
@@ -227,16 +293,7 @@ class DsaTools {
       if (this.silenceTimer) clearTimeout(this.silenceTimer);
       if (this.restartTimeout) clearTimeout(this.restartTimeout);
 
-      if (this.currentPassFinal) {
-        this.confirmedSessionText = this.mergeTranscripts(this.confirmedSessionText, this.currentPassFinal);
-        this.currentPassFinal = '';
-      }
-
-      // Preserve full spoken transcript even if speech was still in interim state
-      let textToSend = (this.confirmedSessionText || '').trim();
-      if (this.latestRecognizedText && this.latestRecognizedText.trim().length > textToSend.length) {
-        textToSend = this.latestRecognizedText.trim();
-      }
+      let textToSend = (this.latestRecognizedText || this.confirmedSessionText || '').trim();
       textToSend = this.sanitizeTranscript(textToSend);
       this.isSessionActive = false;
       this.isListening = false;
@@ -275,25 +332,23 @@ class DsaTools {
       };
 
       this.recognition.onresult = (event) => {
-        let passFinal = '';
-        let passInterim = '';
+        const stream = [];
+        if (this.confirmedSessionText) {
+          stream.push(this.confirmedSessionText);
+        }
 
         for (let i = 0; i < event.results.length; ++i) {
           const item = event.results[i];
           if (item && item[0]) {
-            const text = item[0].transcript;
-            if (item.isFinal) {
-              passFinal += text + ' ';
-            } else {
-              passInterim += text;
+            const chunk = (item[0].transcript || '').trim();
+            if (chunk) {
+              this.mergeChunkIntoStream(stream, chunk);
             }
           }
         }
 
-        this.currentPassFinal = passFinal.trim();
-        const mergedFinal = this.mergeTranscripts(this.confirmedSessionText, this.currentPassFinal);
-        const mergedDisplay = this.mergeTranscripts(mergedFinal, passInterim.trim());
-        const cleanDisplay = this.sanitizeTranscript(mergedDisplay);
+        let cleanDisplay = stream.join(' ').trim();
+        cleanDisplay = this.sanitizeTranscript(cleanDisplay);
         this.latestRecognizedText = cleanDisplay;
 
         if (typeof this.onInterimCb === 'function') {
@@ -336,11 +391,9 @@ class DsaTools {
       this.recognition.onend = () => {
         console.log('[DSA STT] onend pass terminato. Sessione attiva:', this.isSessionActive);
 
-        // Salva il testo finora confermato in memoria senza duplicazioni
-        if (this.currentPassFinal) {
-          this.confirmedSessionText = this.mergeTranscripts(this.confirmedSessionText, this.currentPassFinal);
-          this.confirmedSessionText = this.sanitizeTranscript(this.confirmedSessionText);
-          this.currentPassFinal = '';
+        // Keep whatever clean text has been recognized so far
+        if (this.latestRecognizedText) {
+          this.confirmedSessionText = this.latestRecognizedText;
         }
 
         // SE L'UTENTE STA ANCORA PARLANDO: Riavvia con una NUOVA istanza fresca (buffer pulito)

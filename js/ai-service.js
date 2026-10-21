@@ -135,11 +135,27 @@ Respond ONLY with a valid JSON object:
       };
     }
 
-    // Check if user spoke Italian
-    if (/(ciao|buongiorno|come|stai|grazie|non|so|cosa|dire|bene|male|oggi)/i.test(lower)) {
+    // Check if user asks if the AI understands them or is checking audio
+    if (/\b(understand|hear\s+me|can\s+you\s+hear|what\s+i\s+say|listen\s+to\s+me|do\s+you\s+understand)\b/i.test(lower)) {
       return {
-        en: "I hear some Italian! In English you can say: 'I am doing well'. How was your morning today?",
-        it: "Sento dell'italiano! In inglese puoi dire: 'I am doing well'. Com'è andata la tua mattinata oggi?"
+        en: `Yes, I hear and understand you clearly, ${name}! Your English is coming through well. What would you like to talk about today?`,
+        it: `Sì, ti sento e ti capisco chiaramente, ${name}! Il tuo inglese arriva bene. Di cosa vorresti parlare oggi?`
+      };
+    }
+
+    // Check if user is asking about testing or checking their level
+    if (/\b(diagnostic|test|exam|level|livello|another\s+test|situation)\b/i.test(lower)) {
+      return {
+        en: `We can certainly calibrate your level, ${name}! You can repeat the oral exam anytime, or set your level directly to A2 or B1 in Settings. How do you feel about speaking today?`,
+        it: `Possiamo sicuramente calibrare il tuo livello, ${name}! Puoi rifare il colloquio d'esame quando vuoi o impostare direttamente A2 o B1 nelle Impostazioni. Come ti senti a parlare oggi?`
+      };
+    }
+
+    // Check if user spoke Italian phrases (with strict word boundaries)
+    if (/\b(ciao|buongiorno|buonasera|grazie|non\s+so|come\s+stai|aiuto|cosa\s+faccio|bene\s+grazie)\b/i.test(lower)) {
+      return {
+        en: `I hear a little Italian! Don't worry at all, ${name}. In English we can say: 'I am doing well'. How was your morning today?`,
+        it: `Sento un po' di italiano! Nessun problema, ${name}. In inglese puoi dire: 'I am doing well'. Com'è andata la tua mattinata oggi?`
       };
     }
 

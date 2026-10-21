@@ -315,6 +315,97 @@ Respond ONLY with a valid JSON object:
       return { en: content.trim(), it: "Traduzione" };
     }
   }
+
+  /* Generate brand-new adaptive grammar gym exercises via LLM (Gemini or OpenAI) */
+  async generateAdaptiveGrammarExercises(count = 5, category = 'all') {
+    const aiConfig = configManager.profile.aiConfig;
+    const profile = configManager.profile;
+    const level = profile.currentLevel || 'A2';
+    const activeErrors = Object.entries(profile.errorStats || {})
+      .filter(([_, data]) => data.count > 0 && !data.conquered)
+      .map(([_, d]) => d.label);
+
+    const systemPrompt = `You are a specialist English grammar pedagogy engine for an adult Italian learner with severe DSA (dyslexia).
+Current CEFR Level: ${level}.
+Active Weaknesses: ${activeErrors.join(', ') || '3rd person -s, past irregular verbs, prepositions in/on/at, polite modals'}.
+Target Category Filter: ${category}.
+
+Generate exactly ${count} interactive grammar blank-filling exercises.
+PEDAGOGICAL REQUIREMENTS (STRICT):
+1. STRICTLY NO MULTIPLE CHOICE. Never provide options or choices.
+2. The student must fill in a single target word (e.g. 'works', 'bought', 'doesn\\'t', 'at', 'could').
+3. Practical, natural adult daily/work/travel sentences.
+4. Crystal clear, intuitive 1-sentence Italian explanation of the grammatical reason (no jargon).
+5. Italian meaning of the sentence.
+
+RESPOND ONLY WITH A VALID JSON ARRAY:
+[
+  {
+    "id": "ai_gen_1",
+    "level": "${level}",
+    "category": "3ª Persona (-s)",
+    "categoryKey": "third_person_s",
+    "itPrompt": "Italian sentence meaning",
+    "beforeBlank": "English words before blank",
+    "afterBlank": "English words after blank",
+    "expected": "works",
+    "acceptable": ["works"],
+    "fullSentence": "Full English sentence with target word.",
+    "rule": "1-sentence intuitive rule in Italian.",
+    "hint": "Friendly short hint in Italian.",
+    "isAiGenerated": true
+  }
+]`;
+
+    try {
+      if (aiConfig.provider === 'gemini' && aiConfig.geminiKey) {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${aiConfig.geminiKey}`;
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: `${systemPrompt}\n\nReturn strictly valid JSON array.` }] }]
+          })
+        });
+        if (response.ok) {
+          const data = await response.json();
+          const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          const cleaned = raw.replace(/```json/g, '').replace(/```/g, '').trim();
+          const parsed = JSON.parse(cleaned);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      }
+
+      if (aiConfig.provider === 'openai' && aiConfig.openaiKey) {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${aiConfig.openaiKey}`
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: 'Generate JSON array of grammar exercises now.' }
+            ],
+            temperature: 0.7
+          })
+        });
+        if (response.ok) {
+          const data = await response.json();
+          const content = data.choices[0].message.content;
+          const cleaned = content.replace(/```json/g, '').replace(/```/g, '').trim();
+          const parsed = JSON.parse(cleaned);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      }
+    } catch (err) {
+      console.warn('AI grammar generation error, falling back to procedural engine:', err);
+    }
+
+    return null;
+  }
 }
 
 export const aiService = new AiService();

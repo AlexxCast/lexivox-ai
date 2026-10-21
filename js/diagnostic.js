@@ -97,30 +97,40 @@ class DiagnosticEngine {
           </div>
 
           <!-- Spoken Candidate Console -->
-          <div style="text-align: center; padding: 20px 0;">
-            <div style="display: flex; justify-content: center; align-items: center; gap: 16px; margin-bottom: 16px;">
-              <button id="btn-diag-mic" class="drill-voice-btn">
+          <!-- Spoken Candidate Console -->
+          <div style="text-align: center; padding: 16px 0 8px;">
+            <div style="display: flex; justify-content: center; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 12px;">
+              <button id="btn-diag-mic" class="drill-voice-btn" style="min-width: 220px;">
                 🎙️ Premi e Rispondi a Voce
               </button>
-              <button id="btn-diag-finish" class="btn btn-accent" style="display: none; padding: 14px 22px; font-weight: 700;">
-                ✅ Ho Finito di Parlare (Invia)
+              <button id="btn-diag-finish" class="btn btn-accent btn-finish-recording" style="display: none; padding: 14px 22px; font-weight: 700;">
+                ✅ Ho Finito di Parlare
               </button>
             </div>
 
-            <div id="diag-mic-feedback" style="font-size: 15px; color: var(--text-muted); min-height: 32px; line-height: 1.5;">
-              Prenditi tutto il tempo per pensare. L'esaminatore non ti interrompe!
+            <div id="diag-mic-feedback" style="font-size: 14px; color: var(--text-muted); min-height: 28px; line-height: 1.5;">
+              Tocca il microfono e parla in inglese, oppure scrivi direttamente nel riquadro sotto.
             </div>
           </div>
 
-          <!-- Live Transcript Preview -->
-          <div id="diag-transcript-box" style="display: none; background: rgba(0,0,0,0.3); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 14px; margin-top: 16px; text-align: left;">
-            <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">Ciò che ha ascoltato l'esaminatore:</div>
-            <div id="diag-transcript-text" style="font-size: 15px; color: var(--text-primary); font-weight: 500;"></div>
+          <!-- Live Real-Time Editable Transcript Box -->
+          <div style="margin: 12px 0 16px; text-align: left;">
+            <label style="font-size: 13px; font-weight: 700; color: var(--text-primary); display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+              <span>📝 La tua risposta (parlata a voce o scritta):</span>
+              <span id="diag-recording-indicator" style="display: none; color: #ef4444; font-size: 12px; font-weight: 700;">🔴 In Ascolto...</span>
+            </label>
+            <textarea id="diag-response-input" rows="3" class="console-text-input" style="width: 100%; border-radius: 8px; padding: 12px 14px; font-size: 16px; line-height: 1.5; resize: vertical;" placeholder="Tocca il microfono e parla in inglese, oppure digita qui la tua risposta..."></textarea>
+            <div id="diag-warning-msg" style="display: none; color: #f59e0b; font-size: 13px; margin-top: 6px; font-weight: 600;"></div>
           </div>
 
-          <button id="btn-next-turn" class="btn btn-primary btn-lg" style="width: 100%; margin-top: 24px;" disabled>
-            ${this.currentTurn < EXAMINER_QUESTIONS.length - 1 ? 'Conferma e Passa alla Prossima Domanda ➔' : 'Completa il Colloquio e Mostra Valutazione CEFR ➔'}
-          </button>
+          <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 14px;">
+            <button id="btn-next-turn" class="btn btn-primary btn-lg" style="width: 100%;">
+              ${this.currentTurn < EXAMINER_QUESTIONS.length - 1 ? 'Conferma e Passa alla Prossima Domanda ➔' : 'Completa il Colloquio e Mostra Valutazione CEFR ➔'}
+            </button>
+            <button id="btn-skip-turn" class="btn" style="width: 100%; background: transparent; border: 1px solid var(--border-subtle); color: var(--text-muted); font-size: 13px; padding: 8px;">
+              Non riesco a rispondere, salta domanda ➔
+            </button>
+          </div>
         </div>
       </div>
     `;
@@ -138,11 +148,11 @@ class DiagnosticEngine {
     const micBtn = container.querySelector('#btn-diag-mic');
     const finishBtn = container.querySelector('#btn-diag-finish');
     const feedbackText = container.querySelector('#diag-mic-feedback');
-    const transcriptBox = container.querySelector('#diag-transcript-box');
-    const transcriptText = container.querySelector('#diag-transcript-text');
+    const responseInput = container.querySelector('#diag-response-input');
+    const recordingIndicator = container.querySelector('#diag-recording-indicator');
+    const warningMsg = container.querySelector('#diag-warning-msg');
     const nextBtn = container.querySelector('#btn-next-turn');
-
-    let currentResponseText = '';
+    const skipBtn = container.querySelector('#btn-skip-turn');
 
     if (speakBtn) {
       speakBtn.addEventListener('click', () => {
@@ -154,12 +164,11 @@ class DiagnosticEngine {
       this.isRecording = true;
       micBtn.classList.add('recording');
       micBtn.textContent = '⏹️ Parla Pure...';
-      if (finishBtn) {
-        finishBtn.style.display = 'inline-flex';
-        finishBtn.className = 'btn btn-accent btn-finish-recording';
-      }
+      if (finishBtn) finishBtn.style.display = 'inline-flex';
+      if (recordingIndicator) recordingIndicator.style.display = 'inline';
+      if (warningMsg) warningMsg.style.display = 'none';
       feedbackText.style.color = 'var(--accent-cyan)';
-      feedbackText.textContent = '🎤 Ti sto ascoltando: fai tutte le pause di cui hai bisogno. Quando hai finito tocca il tasto verde!';
+      feedbackText.textContent = '🎤 Ti sto ascoltando: fai tutte le tue pause. Quando hai detto tutto premi "Ho Finito di Parlare"!';
 
       dsaTools.startListening(
         (finalText) => {
@@ -167,31 +176,33 @@ class DiagnosticEngine {
           micBtn.classList.remove('recording');
           micBtn.textContent = '🎙️ Riascolta / Riprova';
           if (finishBtn) finishBtn.style.display = 'none';
+          if (recordingIndicator) recordingIndicator.style.display = 'none';
 
-          currentResponseText = finalText;
-          if (transcriptBox && transcriptText) {
-            transcriptBox.style.display = 'block';
-            transcriptText.textContent = `"${finalText}"`;
+          if (finalText && responseInput) {
+            responseInput.value = finalText;
           }
-
           feedbackText.style.color = 'var(--accent-emerald)';
-          feedbackText.textContent = '✅ Risposta registrata! Premi il tasto blu per confermare o riprova a voce.';
-          nextBtn.removeAttribute('disabled');
+          feedbackText.textContent = '✅ Risposta recepita! Puoi correggerla a mano o premere il tasto blu per confermare.';
         },
         (interimText) => {
-          feedbackText.textContent = `Sto sentendo: "${interimText}"...`;
+          if (interimText && responseInput) {
+            responseInput.value = interimText;
+          }
+          feedbackText.textContent = `Sto sentendo la tua voce...`;
         },
         (err) => {
           this.isRecording = false;
           micBtn.classList.remove('recording');
           micBtn.textContent = '🎙️ Premi e Rispondi';
           if (finishBtn) finishBtn.style.display = 'none';
-          feedbackText.textContent = 'Microfono non udito. Prova a premere di nuovo o controlla i permessi.';
+          if (recordingIndicator) recordingIndicator.style.display = 'none';
+          feedbackText.textContent = 'Microfono non udito o non disponibile. Puoi anche scrivere la risposta qui sotto.';
         },
         () => {
           this.isRecording = false;
           micBtn.classList.remove('recording');
           if (finishBtn) finishBtn.style.display = 'none';
+          if (recordingIndicator) recordingIndicator.style.display = 'none';
         }
       );
     };
@@ -212,15 +223,36 @@ class DiagnosticEngine {
       });
     }
 
+    const proceedWithAnswer = (text) => {
+      if (dsaTools.isListening) {
+        dsaTools.stopListening();
+      }
+      this.candidateResponses.push({
+        turn: question.turn,
+        category: question.category,
+        transcript: text || ''
+      });
+      this.currentTurn++;
+      this.renderStep(container);
+    };
+
     if (nextBtn) {
       nextBtn.addEventListener('click', () => {
-        this.candidateResponses.push({
-          turn: question.turn,
-          category: question.category,
-          transcript: currentResponseText
-        });
-        this.currentTurn++;
-        this.renderStep(container);
+        const text = responseInput ? responseInput.value.trim() : '';
+        if (!text) {
+          if (warningMsg) {
+            warningMsg.style.display = 'block';
+            warningMsg.textContent = '⚠️ Non hai ancora risposto: tocca il microfono per parlare, scrivi nel riquadro o premi "Salta domanda" se preferisci non rispondere.';
+          }
+          return;
+        }
+        proceedWithAnswer(text);
+      });
+    }
+
+    if (skipBtn) {
+      skipBtn.addEventListener('click', () => {
+        proceedWithAnswer('');
       });
     }
   }

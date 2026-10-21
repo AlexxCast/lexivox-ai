@@ -121,7 +121,6 @@ class DsaTools {
     this.silenceTimer = null;
     this.restartTimeout = null;
     this.SILENCE_DELAY_MS = 10000; // 10 seconds cognitive buffer: never interrupt DSA thought pauses
-    this.mediaStream = null;
   }
 
   /* Robust Transcript Sanitizer: Removes duplicate identical phrases and adjacent stutter words */
@@ -202,7 +201,7 @@ class DsaTools {
     return `${base} ${addition}`;
   }
 
-  async startListening(onResult, onInterim, onError, onEnd) {
+  startListening(onResult, onInterim, onError, onEnd) {
     if (!this.SpeechRecognitionClass) {
       if (typeof onError === 'function') onError('Microfono non supportato in questo browser. Usa la tastiera.');
       return;
@@ -222,17 +221,6 @@ class DsaTools {
     this.onErrorCb = onError;
     this.onEndCb = onEnd;
 
-    // Keep audio hardware alive on mobile Chrome/Safari
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-      try {
-        if (!this.mediaStream) {
-          this.mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        }
-      } catch (streamErr) {
-        console.warn('[DSA STT] MediaStream warning (proceeding):', streamErr);
-      }
-    }
-
     const commitAndSend = () => {
       if (!this.isSessionActive) return;
       if (this.silenceTimer) clearTimeout(this.silenceTimer);
@@ -248,10 +236,9 @@ class DsaTools {
       this.isListening = false;
 
       this.destroyRecognition();
-      this.releaseMediaStream();
 
-      if (textToSend && typeof this.onResultCb === 'function') {
-        this.onResultCb(textToSend);
+      if (typeof this.onResultCb === 'function') {
+        this.onResultCb(textToSend || '');
       }
       if (typeof this.onEndCb === 'function') {
         this.onEndCb();
@@ -330,7 +317,6 @@ class DsaTools {
           this.isSessionActive = false;
           this.isListening = false;
           this.destroyRecognition();
-          this.releaseMediaStream();
           if (typeof this.onErrorCb === 'function') {
             this.onErrorCb('Permesso microfono negato o non disponibile.');
           }
@@ -364,7 +350,6 @@ class DsaTools {
         // Se l'utente ha premuto "Ho Finito di Parlare" o Stop
         this.isListening = false;
         this.destroyRecognition();
-        this.releaseMediaStream();
         if (typeof this.onEndCb === 'function') {
           this.onEndCb();
         }
@@ -396,26 +381,12 @@ class DsaTools {
     }
   }
 
-  releaseMediaStream() {
-    if (this.mediaStream) {
-      try {
-        this.mediaStream.getTracks().forEach(t => t.stop());
-      } catch (e) {}
-      this.mediaStream = null;
-    }
-  }
-
   stopListening() {
     this.isSessionActive = false;
     this.isListening = false;
     if (this.silenceTimer) clearTimeout(this.silenceTimer);
     if (this.restartTimeout) clearTimeout(this.restartTimeout);
-    this.releaseMediaStream();
-    if (this.recognition) {
-      try {
-        this.recognition.stop();
-      } catch (e) {}
-    }
+    this.destroyRecognition();
     if (typeof this.onEndCb === 'function') {
       this.onEndCb();
     }

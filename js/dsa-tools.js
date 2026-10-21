@@ -102,7 +102,7 @@ class DsaTools {
     this.currentUtterance = null;
   }
 
-  /* ---------------- STT Engine (Speech Recognition) ---------------- */
+  /* ---------------- STT Engine (Speech Recognition - DSA Thinking-Guard) ---------------- */
   initSpeechRecognition() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -111,10 +111,13 @@ class DsaTools {
     }
 
     this.recognition = new SpeechRecognition();
-    this.recognition.continuous = false; // Turn-based for natural DSA pacing
+    this.recognition.continuous = true; // Stay alive during cognitive pauses
     this.recognition.interimResults = true;
     this.recognition.lang = 'en-US';
     this.recognition.maxAlternatives = 1;
+    this.accumulatedTranscript = '';
+    this.silenceTimer = null;
+    this.SILENCE_DELAY_MS = 5000; // 5 seconds of silence before auto-submitting (generous for DSA)
   }
 
   startListening(onResult, onInterim, onError, onEnd) {
@@ -124,40 +127,73 @@ class DsaTools {
     }
 
     this.stopAudio(); // Silence any playing audio when user starts speaking
+    this.accumulatedTranscript = '';
+    if (this.silenceTimer) clearTimeout(this.silenceTimer);
 
     this.recognition.onstart = () => {
       this.isListening = true;
     };
 
+    const commitAndSend = () => {
+      if (this.silenceTimer) clearTimeout(this.silenceTimer);
+      const textToSend = this.accumulatedTranscript.trim();
+      if (textToSend && typeof onResult === 'function') {
+        this.stopListening();
+        onResult(textToSend);
+      }
+    };
+
     this.recognition.onresult = (event) => {
       let interim = '';
-      let final = '';
+      let newFinal = '';
 
       for (let i = event.resultIndex; i < event.results.length; ++i) {
         if (event.results[i].isFinal) {
-          final += event.results[i][0].transcript;
+          newFinal += event.results[i][0].transcript + ' ';
         } else {
           interim += event.results[i][0].transcript;
         }
       }
 
-      if (interim && typeof onInterim === 'function') {
-        onInterim(interim);
+      if (newFinal) {
+        this.accumulatedTranscript += newFinal;
       }
 
-      if (final && typeof onResult === 'function') {
-        onResult(final.trim());
+      const currentTotalDisplay = (this.accumulatedTranscript + interim).trim();
+      if (typeof onInterim === 'function') {
+        onInterim(currentTotalDisplay);
+      }
+
+      // Reset generous DSA thinking timer on every detected speech snippet
+      if (this.silenceTimer) clearTimeout(this.silenceTimer);
+      if (this.accumulatedTranscript.trim()) {
+        this.silenceTimer = setTimeout(() => {
+          commitAndSend();
+        }, this.SILENCE_DELAY_MS);
       }
     };
 
     this.recognition.onerror = (event) => {
+      if (event.error === 'no-speech') {
+        // Keep listening, do not abort on brief silence
+        return;
+      }
       this.isListening = false;
+      if (this.silenceTimer) clearTimeout(this.silenceTimer);
       if (typeof onError === 'function') onError(event.error);
     };
 
     this.recognition.onend = () => {
+      // If stopped naturally but we have pending text that wasn't committed
+      if (this.isListening && this.accumulatedTranscript.trim()) {
+        commitAndSend();
+      }
       this.isListening = false;
       if (typeof onEnd === 'function') onEnd();
+    };
+
+    this.manualCommit = () => {
+      commitAndSend();
     };
 
     try {
@@ -168,9 +204,18 @@ class DsaTools {
   }
 
   stopListening() {
+    if (this.silenceTimer) clearTimeout(this.silenceTimer);
     if (this.recognition && this.isListening) {
       this.recognition.stop();
       this.isListening = false;
+    }
+  }
+
+  forceCommitSpeech() {
+    if (typeof this.manualCommit === 'function') {
+      this.manualCommit();
+    } else {
+      this.stopListening();
     }
   }
 

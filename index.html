@@ -125,9 +125,14 @@
       </div>
 
       <div class="a11y-option-group">
-        <label class="a11y-option-label" for="setting-gemini-key">API Key (Opzionale - se usi Gemini/OpenAI):</label>
+        <label class="a11y-option-label" for="setting-gemini-key">API Key (Google Gemini / OpenAI):</label>
         <input type="password" id="setting-gemini-key" class="console-text-input" style="width: 100%;" placeholder="Incolla la tua chiave API qui..." />
-        <span style="font-size: 12px; color: var(--text-muted); display: block; margin-top: 4px;">La chiave viene salvata esclusivamente nel tuo browser.</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px;">
+          <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener" style="color: var(--accent-cyan); font-size: 12px; text-decoration: underline;">
+            🔗 Clicca qui per ottenere una chiave Gemini 100% gratuita
+          </a>
+        </div>
+        <span style="font-size: 11px; color: var(--text-muted); display: block; margin-top: 4px;">La chiave viene salvata esclusivamente nel tuo browser per sicurezza.</span>
       </div>
 
       <button id="btn-save-settings" class="btn btn-primary" style="width: 100%; margin-top: 10px;">

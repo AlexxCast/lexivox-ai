@@ -211,6 +211,10 @@ Respond ONLY with a JSON object in this format:
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [
+          ...this.conversationHistory.slice(-6).map(m => ({
+            role: m.role === 'assistant' ? 'model' : 'user',
+            parts: [{ text: m.content }]
+          })),
           { role: 'user', parts: [{ text: `${systemPrompt}\n\nStudent just said to you: "${prompt}"` }] }
         ]
       })

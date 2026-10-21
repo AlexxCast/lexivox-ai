@@ -92,6 +92,40 @@ export const ERROR_DEFINITIONS = {
     patterns: [
       /\b(i have tree|tree people|tank you|tank you very much|dis and dat)\b/i
     ]
+  },
+
+  i_am_agree: {
+    id: 'i_am_agree',
+    title: "Sono d'accordo: 'I agree' (senza AM)",
+    category: "Espressioni Comuni",
+    intuitiveRule: "In inglese 'Agree' è già un verbo di azione! Non serve aggiungere 'am'. Dici semplicemente <strong>'I agree'</strong> (come dire 'io concordo').",
+    wrongExample: "❌ I am agree with you",
+    correctExample: "✅ I agree with you",
+    prompts: [
+      { it: "Come dici a voce: 'Sono d'accordo con te'?", expectedPatterns: [/i agree with you/i], target: "I agree with you" },
+      { it: "Come dici a voce: 'Lei è d'accordo'?", expectedPatterns: [/she agrees/i], target: "She agrees" },
+      { it: "Come dici a voce: 'Siamo tutti d'accordo'?", expectedPatterns: [/we all agree/i], target: "We all agree" }
+    ],
+    patterns: [
+      /\b(i am agree|i'm agree|he is agree|she is agree)\b/i
+    ]
+  },
+
+  he_dont: {
+    id: 'he_dont',
+    title: "Negazione alla 3ª Persona: 'He doesn't'",
+    category: "Negazioni Spontanee",
+    intuitiveRule: "Ricorda la 'S' della 3ª persona: la negazione per He/She/It prende sempre la forma con la 'S' ➔ <strong>doesn't</strong> (non 'don't')!",
+    wrongExample: "❌ He don't know / She don't like it",
+    correctExample: "✅ He doesn't know / She doesn't like it",
+    prompts: [
+      { it: "Come dici a voce: 'Lui non sa'?", expectedPatterns: [/he doesn't know/i, /he does not know/i], target: "He doesn't know" },
+      { it: "Come dici a voce: 'A lei non piace il caffè'?", expectedPatterns: [/she doesn't like coffee/i], target: "She doesn't like coffee" },
+      { it: "Come dici a voce: 'Lui non lavora qui'?", expectedPatterns: [/he doesn't work here/i], target: "He doesn't work here" }
+    ],
+    patterns: [
+      /\b(he|she|it|my friend|my father|the teacher)\s+(don't|dont)\b/i
+    ]
   }
 };
 

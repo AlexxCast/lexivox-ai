@@ -6,7 +6,7 @@
 
 import { aiService } from './ai-service.js';
 import { dsaTools } from './dsa-tools.js';
-import { errorTracker } from './error-tracker.js';
+import { errorTracker, ERROR_DEFINITIONS } from './error-tracker.js';
 import { microLessonManager } from './micro-lessons.js';
 import { configManager } from './config.js';
 import { fluencyAnalyzer } from './fluency-analyzer.js';
@@ -99,8 +99,13 @@ class LiveDialogueController {
 
             <!-- Fallback Text Input & Status -->
             <div class="console-content">
-              <div class="console-status-text" id="console-status-text">
-                👉 Tocca il microfono e parla in inglese senza timore
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                <div class="console-status-text" id="console-status-text">
+                  👉 Tocca il microfono e parla in inglese senza fretta
+                </div>
+                <button id="btn-finish-speech" class="btn btn-accent" style="display: none; padding: 6px 14px; font-size: 13px; font-weight: 700;">
+                  ✅ Ho Finito di Parlare (Invia)
+                </button>
               </div>
               <div class="console-input-row">
                 <input type="text" id="console-fallback-input" class="console-text-input" placeholder="Oppure scrivi qui se non puoi usare il microfono..." />
@@ -193,15 +198,22 @@ class LiveDialogueController {
     const speedSelect = this.container.querySelector('#audio-speed-select');
     const autoReadCheck = this.container.querySelector('#check-auto-read');
 
-    // Voice Orb Click
+    // Voice Orb Click & Finish Button
+    const finishBtn = this.container.querySelector('#btn-finish-speech');
+
     if (orbBtn) {
       orbBtn.addEventListener('click', () => {
         if (dsaTools.isListening) {
-          dsaTools.stopListening();
-          this.updateVoiceOrbState('idle');
+          dsaTools.forceCommitSpeech();
         } else {
           this.startVoiceInput();
         }
+      });
+    }
+
+    if (finishBtn) {
+      finishBtn.addEventListener('click', () => {
+        dsaTools.forceCommitSpeech();
       });
     }
 
@@ -274,34 +286,49 @@ class LiveDialogueController {
     const statusDot = this.container.querySelector('#live-status-dot');
     const statusText = this.container.querySelector('#live-status-text');
     const consoleText = this.container.querySelector('#console-status-text');
+    const finishBtn = this.container.querySelector('#btn-finish-speech');
 
     if (!orbBtn) return;
 
     if (state === 'listening') {
       orbBtn.classList.add('recording');
+      orbBtn.innerHTML = '⏹️';
       if (statusDot) statusDot.className = 'status-dot listening';
       if (statusText) statusText.textContent = 'Ascolto la tua voce...';
-      if (consoleText) consoleText.innerHTML = '🎤 <strong>Ti sto ascoltando:</strong> parla spontaneamente in inglese...';
+      if (consoleText) consoleText.innerHTML = '🎤 <strong>Ti ascolto senza fretta:</strong> prenditi il tempo per pensare!';
+      if (finishBtn) finishBtn.style.display = 'inline-flex';
     } else if (state === 'speaking') {
       orbBtn.classList.remove('recording');
+      orbBtn.innerHTML = '🎙️';
       if (statusDot) statusDot.className = 'status-dot speaking';
       if (statusText) statusText.textContent = 'IA Tutor sta parlando...';
       if (consoleText) consoleText.textContent = '🔊 Ascolta la pronuncia con attenzione...';
+      if (finishBtn) finishBtn.style.display = 'none';
     } else {
       orbBtn.classList.remove('recording');
+      orbBtn.innerHTML = '🎙️';
       if (statusDot) statusDot.className = 'status-dot';
       if (statusText) statusText.textContent = 'Canale Vocale Pronto';
       if (consoleText) consoleText.textContent = '👉 Tocca il microfono o rispondi a voce';
+      if (finishBtn) finishBtn.style.display = 'none';
     }
   }
 
   async handleUserUtterance(text, fluencyStats = null) {
-    // 1. Append User Message Bubble with Fluency & Pronunciation stats
-    this.appendMessage('user', text, null, fluencyStats);
-
-    // 2. Real-time Linguistic / Error Analysis
+    // 1. Real-time Linguistic / Error Analysis
     const errors = errorTracker.analyzeUserUtterance(text);
     this.updateErrorSidebar();
+
+    let coachingHint = null;
+    if (errors && errors.length > 0) {
+      const errDef = ERROR_DEFINITIONS[errors[0]];
+      if (errDef) {
+        coachingHint = errDef.correctExample;
+      }
+    }
+
+    // 2. Append User Message Bubble with Fluency & Coaching Hint
+    this.appendMessage('user', text, null, fluencyStats, coachingHint);
 
     // 3. Show "Thinking" feedback
     this.updateVoiceOrbState('speaking');
@@ -320,7 +347,7 @@ class LiveDialogueController {
     this.handleUserUtterance(text, stats);
   }
 
-  appendMessage(sender, enText, itText = null, fluencyStats = null) {
+  appendMessage(sender, enText, itText = null, fluencyStats = null, coachingHint = null) {
     const messagesScroll = this.container.querySelector('#chat-messages-scroll');
     if (!messagesScroll) return;
 
@@ -347,9 +374,9 @@ class LiveDialogueController {
         </div>
         ${itText ? `<div id="${uniqueId}" class="translation-box">${itText}</div>` : ''}
       `;
-    } else if (sender === 'user' && fluencyStats) {
-      toolsHtml = `
-        <div class="user-fluency-badge" style="display: flex; align-items: center; gap: 10px; margin-top: 6px; font-size: 11px; color: var(--text-muted); background: rgba(0,0,0,0.25); padding: 4px 10px; border-radius: var(--radius-full);">
+    } else if (sender === 'user') {
+      const statsBadge = fluencyStats ? `
+        <div class="user-fluency-badge" style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted); background: rgba(0,0,0,0.25); padding: 4px 10px; border-radius: var(--radius-full); margin-top: 4px;">
           <span>⚡ <strong>${fluencyStats.wpm} WPM</strong></span>
           <span>•</span>
           <span>🎯 Pronuncia: <strong style="color: #6ee7b7;">${fluencyStats.pronunciationScore}%</strong></span>
@@ -357,7 +384,15 @@ class LiveDialogueController {
           <span>⏱️ Reazione: <strong>${fluencyStats.latencySec}s</strong></span>
           <span style="color: ${fluencyStats.fluencyColor}; font-weight: 700; margin-left: auto;">${fluencyStats.fluencyRating}</span>
         </div>
-      `;
+      ` : '';
+
+      const hintBadge = coachingHint ? `
+        <div style="font-size: 12px; color: #fde047; margin-top: 4px; background: rgba(255, 190, 11, 0.15); padding: 4px 10px; border-radius: 6px; border-left: 3px solid var(--accent-amber);">
+          💡 ${coachingHint}
+        </div>
+      ` : '';
+
+      toolsHtml = statsBadge + hintBadge;
     }
 
     row.innerHTML = `

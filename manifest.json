@@ -1,0 +1,24 @@
+{
+  "name": "LexiVox AI - English Tutor per DSA",
+  "short_name": "LexiVox",
+  "description": "Applicazione vocale per l'apprendimento rapido dell'inglese parlato, ottimizzata per dislessia e DSA.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f141f",
+  "theme_color": "#0f141f",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "assets/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

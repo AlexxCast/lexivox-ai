@@ -1,0 +1,706 @@
+/* ==========================================================================
+   LexiVox AI - Live Conversation & Adaptive Micro-Lesson Engine CSS
+   ========================================================================== */
+
+/* Conversation Container */
+.conversation-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 24px;
+  height: calc(100vh - var(--header-height) - 64px);
+}
+
+@media (max-width: 1100px) {
+  .conversation-layout {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+}
+
+.chat-stage-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+}
+
+/* Chat Header with Status & Scenario Selector */
+.chat-stage-header {
+  padding: 16px 24px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.scenario-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--bg-surface);
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-subtle);
+}
+
+.scenario-badge select {
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  outline: none;
+}
+
+.scenario-badge select option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.live-channel-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent-emerald);
+  box-shadow: 0 0 10px var(--accent-emerald);
+}
+
+.status-dot.listening {
+  background: var(--accent-coral);
+  box-shadow: 0 0 12px var(--accent-coral);
+  animation: pulseDot 1s infinite;
+}
+
+.status-dot.speaking {
+  background: var(--accent-blue);
+  box-shadow: 0 0 12px var(--accent-blue);
+  animation: pulseDot 1s infinite;
+}
+
+@keyframes pulseDot {
+  0% { transform: scale(0.9); opacity: 0.7; }
+  50% { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(0.9); opacity: 0.7; }
+}
+
+/* Chat Messages Feed */
+.chat-messages-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  scroll-behavior: smooth;
+}
+
+/* Message Bubble Styles */
+.message-row {
+  display: flex;
+  gap: 14px;
+  max-width: 85%;
+  animation: bubblePop 0.25s ease;
+}
+
+@keyframes bubblePop {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.message-row.user {
+  margin-left: auto;
+  flex-direction: row-reverse;
+}
+
+.msg-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  background: var(--bg-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+  border: 1px solid var(--border-subtle);
+}
+
+.message-row.ai .msg-avatar {
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+  color: white;
+  box-shadow: 0 0 12px rgba(58, 134, 255, 0.4);
+}
+
+.message-row.user .msg-avatar {
+  background: linear-gradient(135deg, var(--accent-cyan), var(--accent-emerald));
+  color: #0f172a;
+}
+
+.msg-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.msg-content {
+  padding: 16px 20px;
+  border-radius: 18px;
+  font-size: 16px;
+  line-height: 1.6;
+  position: relative;
+  word-break: break-word;
+}
+
+.message-row.ai .msg-content {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border-top-left-radius: 4px;
+  border: 1px solid var(--border-subtle);
+}
+
+.message-row.user .msg-content {
+  background: linear-gradient(135deg, rgba(58, 134, 255, 0.85), rgba(131, 56, 236, 0.85));
+  color: white;
+  border-top-right-radius: 4px;
+  box-shadow: 0 4px 15px rgba(58, 134, 255, 0.25);
+}
+
+.msg-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.tool-chip-btn {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  padding: 3px 10px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all var(--transition-fast);
+}
+
+.tool-chip-btn:hover {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border-color: var(--accent-blue);
+}
+
+.translation-box {
+  background: rgba(0, 0, 0, 0.25);
+  border-left: 3px solid var(--accent-amber);
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin-top: 8px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-style: italic;
+  display: none;
+}
+
+.translation-box.visible {
+  display: block;
+}
+
+/* Voice Interim Streaming Indicator */
+.live-stream-feedback {
+  min-height: 28px;
+  padding: 4px 24px;
+  font-size: 13px;
+  color: var(--accent-cyan);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-style: italic;
+}
+
+/* Bottom Spoken Voice Console */
+.voice-console {
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-subtle);
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+/* The Voice Orb Button */
+.voice-orb-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.voice-orb-btn {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+  color: white;
+  font-size: 32px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 2;
+  box-shadow: 0 0 25px rgba(58, 134, 255, 0.4);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.voice-orb-btn:hover {
+  transform: scale(1.08);
+  box-shadow: 0 0 35px rgba(58, 134, 255, 0.65);
+}
+
+.voice-orb-btn.recording {
+  background: linear-gradient(135deg, var(--accent-coral), #f72585);
+  box-shadow: 0 0 35px rgba(255, 0, 110, 0.6);
+  transform: scale(1.1);
+}
+
+/* Sound Wave Ripples when recording */
+.sound-ripple {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 2px solid var(--accent-blue);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.voice-orb-btn.recording ~ .sound-ripple {
+  animation: rippleWave 1.8s infinite cubic-bezier(0, 0.2, 0.8, 1);
+}
+
+.voice-orb-btn.recording ~ .sound-ripple:nth-child(2) {
+  animation-delay: 0.6s;
+}
+
+.voice-orb-btn.recording ~ .sound-ripple:nth-child(3) {
+  animation-delay: 1.2s;
+}
+
+@keyframes rippleWave {
+  0% { transform: scale(1); opacity: 0.8; border-color: var(--accent-coral); }
+  100% { transform: scale(2.2); opacity: 0; border-color: var(--accent-purple); }
+}
+
+/* Console Input Fallback / Speech Status */
+.console-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.console-status-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.console-input-row {
+  display: flex;
+  gap: 10px;
+}
+
+.console-text-input {
+  flex: 1;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px 18px;
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  font-size: 15px;
+  outline: none;
+  transition: border-color var(--transition-fast);
+}
+
+.console-text-input:focus {
+  border-color: var(--accent-blue);
+}
+
+.btn-send-msg {
+  background: var(--accent-blue);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 0 20px;
+  font-size: 18px;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.btn-send-msg:hover {
+  background: #2563eb;
+}
+
+/* Right Sidebar: Real-time Adaptive Monitor */
+.conversation-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.live-metric-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  backdrop-filter: blur(14px);
+}
+
+.live-metric-title {
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+/* Circular Daily Time Progress Ring */
+.daily-timer-box {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.timer-circle-wrap {
+  position: relative;
+  width: 72px;
+  height: 72px;
+}
+
+.timer-svg {
+  transform: rotate(-90deg);
+  width: 72px;
+  height: 72px;
+}
+
+.timer-circle-bg {
+  fill: none;
+  stroke: var(--bg-surface);
+  stroke-width: 6;
+}
+
+.timer-circle-val {
+  fill: none;
+  stroke: url(#timerGradient);
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-dasharray: 188;
+  stroke-dashoffset: 188;
+  transition: stroke-dashoffset 0.8s ease;
+}
+
+.timer-center-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.timer-info-text h4 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.timer-info-text p {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Error Tracker List in Sidebar */
+.error-monitor-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.error-tag-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-surface);
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--accent-amber);
+}
+
+.error-tag-item.high-priority {
+  border-left-color: var(--accent-coral);
+  background: rgba(255, 0, 110, 0.08);
+}
+
+.error-tag-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.error-tag-count {
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  color: var(--text-secondary);
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   ADAPTIVE MICRO-LESSON MODAL (Targeted Mastery Drill)
+   ========================================================================== */
+.micro-lesson-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 15, 29, 0.88);
+  backdrop-filter: blur(10px);
+  z-index: 10001;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.micro-lesson-modal-overlay.open {
+  display: flex;
+}
+
+.micro-lesson-card {
+  width: 100%;
+  max-width: 680px;
+  background: var(--bg-secondary);
+  border: 2px solid var(--accent-purple);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  box-shadow: 0 0 50px rgba(131, 56, 236, 0.35);
+  animation: zoomIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+}
+
+@keyframes zoomIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.micro-lesson-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  background: rgba(131, 56, 236, 0.2);
+  border: 1px solid rgba(131, 56, 236, 0.5);
+  color: #c4b5fd;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.micro-lesson-title {
+  font-family: var(--font-heading);
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 14px;
+}
+
+.rule-intuitive-box {
+  background: var(--bg-surface);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  margin-bottom: 24px;
+  border-left: 4px solid var(--accent-cyan);
+}
+
+.rule-heading {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent-cyan);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+.rule-body {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+.contrast-examples-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 16px 0;
+}
+
+.example-box {
+  padding: 14px;
+  border-radius: var(--radius-md);
+  font-size: 15px;
+}
+
+.example-box.wrong {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+}
+
+.example-box.correct {
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #6ee7b7;
+}
+
+/* Spontaneous Spoken Drill Area */
+.drill-challenge-area {
+  background: var(--bg-card);
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.drill-target-prompt {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+}
+
+.drill-streak-dots {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.drill-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--border-subtle);
+  background: var(--bg-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-muted);
+  transition: all 0.3s;
+}
+
+.drill-dot.passed {
+  border-color: var(--accent-cyan);
+  background: var(--accent-cyan);
+  color: #0f172a;
+  transform: scale(1.15);
+  box-shadow: 0 0 15px rgba(6, 214, 160, 0.5);
+}
+
+.drill-voice-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 28px;
+  border-radius: var(--radius-full);
+  background: var(--accent-blue);
+  color: white;
+  border: none;
+  font-family: var(--font-family);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 0 20px rgba(58, 134, 255, 0.4);
+  transition: all var(--transition-fast);
+}
+
+.drill-voice-btn.recording {
+  background: var(--accent-coral);
+  box-shadow: 0 0 25px rgba(255, 0, 110, 0.6);
+  animation: pulseDot 1.2s infinite;
+}
+
+.drill-feedback-msg {
+  margin-top: 14px;
+  font-size: 15px;
+  font-weight: 600;
+  min-height: 24px;
+}
+
+.drill-feedback-msg.success {
+  color: var(--accent-cyan);
+}
+
+.drill-feedback-msg.retry {
+  color: var(--accent-amber);
+}
+
+/* Success Celebration Banner */
+.mastery-achieved-screen {
+  text-align: center;
+  padding: 20px;
+  display: none;
+}
+
+.mastery-achieved-screen.active {
+  display: block;
+}
+
+.mastery-star-icon {
+  font-size: 64px;
+  color: var(--accent-amber);
+  animation: bounce 1s infinite alternate;
+}
+
+@keyframes bounce {
+  from { transform: translateY(0); }
+  to { transform: translateY(-12px); }
+}

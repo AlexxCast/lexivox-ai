@@ -1,0 +1,448 @@
+/* ==========================================================================
+   LexiVox AI - Main Design System & Tokens
+   Designed for High Accessibility & Severe DSA (Dyslexia-Optimized)
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700&display=swap');
+
+:root {
+  /* Color Palette - Neuro-inclusive & Low Visual Stress */
+  --bg-primary: #0f141f;
+  --bg-secondary: #171f30;
+  --bg-card: rgba(28, 38, 59, 0.75);
+  --bg-card-hover: rgba(36, 48, 74, 0.85);
+  --bg-surface: #222d45;
+  --bg-glass: rgba(255, 255, 255, 0.04);
+  
+  --text-primary: #f0f4fc;
+  --text-secondary: #a8b6d4;
+  --text-muted: #7182a6;
+  --text-highlight: #ffd166;
+  
+  --accent-blue: #3a86ff;
+  --accent-cyan: #06d6a0;
+  --accent-purple: #8338ec;
+  --accent-coral: #ff006e;
+  --accent-amber: #ffbe0b;
+  --accent-emerald: #10b981;
+  
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-focus: #3a86ff;
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-glow: 0 0 25px rgba(58, 134, 255, 0.25);
+  --shadow-glow-emerald: 0 0 25px rgba(16, 185, 129, 0.3);
+
+  /* DSA Typography Parameters (Customizable in settings) */
+  --font-family: 'Lexend', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-heading: 'Outfit', 'Lexend', sans-serif;
+  --font-size-base: 16px;
+  --line-height-base: 1.75;
+  --letter-spacing-base: 0.035em;
+  --word-spacing-base: 0.1em;
+  
+  /* Tint Overlays for Scotopic Sensitivity */
+  --tint-overlay: transparent;
+  
+  /* Layout */
+  --sidebar-width: 260px;
+  --header-height: 72px;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-full: 9999px;
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Light / Warm Theme for users sensitive to dark mode */
+[data-theme="warm-cream"] {
+  --bg-primary: #fdfbf7;
+  --bg-secondary: #f4efe6;
+  --bg-card: rgba(255, 255, 255, 0.9);
+  --bg-card-hover: #ffffff;
+  --bg-surface: #e8e1d5;
+  --bg-glass: rgba(0, 0, 0, 0.03);
+  
+  --text-primary: #1f2738;
+  --text-secondary: #4a5568;
+  --text-muted: #718096;
+  --text-highlight: #b45309;
+  
+  --border-subtle: rgba(0, 0, 0, 0.08);
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.09);
+  --shadow-glow: 0 0 25px rgba(58, 134, 255, 0.15);
+}
+
+[data-theme="soft-sage"] {
+  --bg-primary: #eef4f0;
+  --bg-secondary: #e2ede6;
+  --bg-card: rgba(255, 255, 255, 0.92);
+  --bg-card-hover: #ffffff;
+  --bg-surface: #d3e2d8;
+  --text-primary: #192b21;
+  --text-secondary: #3b5245;
+  --text-muted: #5e7769;
+}
+
+/* Universal Reset */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-base);
+  letter-spacing: var(--letter-spacing-base);
+  word-spacing: var(--word-spacing-base);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+  transition: background-color var(--transition-normal), color var(--transition-normal);
+}
+
+/* Tint Filter for dyslexia light sensitivity */
+#screen-tint-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9998;
+  background: var(--tint-overlay);
+  transition: background 0.3s ease;
+}
+
+/* Visual Reading Guide (Righello di lettura per DSA) */
+#dsa-reading-ruler {
+  position: fixed;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background: rgba(255, 222, 89, 0.18);
+  border-top: 2px dashed rgba(255, 193, 7, 0.6);
+  border-bottom: 2px dashed rgba(255, 193, 7, 0.6);
+  pointer-events: none;
+  z-index: 9997;
+  display: none;
+  transform: translateY(-50%);
+  box-shadow: 0 0 15px rgba(255, 222, 89, 0.15);
+}
+
+/* Base App Layout */
+.app-container {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* Sidebar Navigation */
+.app-sidebar {
+  width: var(--sidebar-width);
+  background-color: var(--bg-secondary);
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 100;
+  padding: 24px 16px;
+  transition: width var(--transition-normal);
+}
+
+.brand-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 8px 24px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.brand-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 24px;
+  box-shadow: var(--shadow-glow);
+}
+
+.brand-text h1 {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text-primary);
+}
+
+.brand-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(6, 214, 160, 0.15);
+  color: var(--accent-cyan);
+}
+
+/* Navigation Links */
+.nav-menu {
+  list-style: none;
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.nav-item {
+  width: 100%;
+}
+
+.nav-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-family);
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: all var(--transition-fast);
+}
+
+.nav-btn .icon {
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.nav-btn:hover {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border-color: var(--border-subtle);
+  transform: translateX(3px);
+}
+
+.nav-btn.active {
+  background: linear-gradient(135deg, rgba(58, 134, 255, 0.2), rgba(131, 56, 236, 0.15));
+  color: #ffffff;
+  border-color: rgba(58, 134, 255, 0.4);
+  box-shadow: 0 4px 16px rgba(58, 134, 255, 0.2);
+}
+
+.nav-btn.active .icon {
+  background: var(--accent-blue);
+  color: white;
+}
+
+.nav-badge {
+  margin-left: auto;
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  background: var(--accent-coral);
+  color: white;
+  font-weight: 700;
+}
+
+/* Sidebar Daily Goal Widget */
+.sidebar-streak-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: auto;
+}
+
+.streak-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.streak-flame {
+  color: var(--accent-amber);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.streak-progress-bar {
+  width: 100%;
+  height: 8px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.streak-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--accent-amber), var(--accent-coral));
+  border-radius: var(--radius-full);
+  transition: width 0.5s ease;
+}
+
+/* Main Content Area */
+.app-main {
+  flex: 1;
+  margin-left: var(--sidebar-width);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Topbar Header */
+.app-header {
+  height: var(--header-height);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+  position: sticky;
+  top: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  backdrop-filter: blur(12px);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.page-title {
+  font-family: var(--font-heading);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* Quick Accessibility Toolbar */
+.a11y-toolbar {
+  display: flex;
+  align-items: center;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  padding: 4px 8px;
+  gap: 6px;
+}
+
+.a11y-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-family: var(--font-family);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all var(--transition-fast);
+}
+
+.a11y-btn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.a11y-btn.active {
+  background: var(--accent-blue);
+  color: white;
+}
+
+/* User Level Pill */
+.user-level-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: linear-gradient(135deg, rgba(6, 214, 160, 0.15), rgba(58, 134, 255, 0.15));
+  border: 1px solid rgba(6, 214, 160, 0.4);
+  border-radius: var(--radius-full);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent-cyan);
+}
+
+/* Stage Area (Views) */
+.stage-content {
+  flex: 1;
+  padding: 32px;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* View Switcher */
+.view-panel {
+  display: none;
+  animation: fadeIn 0.3s ease;
+}
+
+.view-panel.active {
+  display: block;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Utility Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--bg-surface);
+  border-radius: var(--radius-full);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}

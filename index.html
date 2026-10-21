@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="LexiVox AI - Applicazione adattiva per l'apprendimento rapido dell'inglese parlato progettata per DSA grave, dislessia e barriere linguistiche. Diagnosi, conversazione vocale live e micro-lezioni di sblocco continuo.">
+  <meta name="theme-color" content="#0f141f">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="LexiVox">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="assets/icon-192.svg">
+  <link rel="icon" type="image/svg+xml" href="assets/icon-192.svg">
+  <title>LexiVox AI - Inglese Parlato per DSA & Dislessia</title>
+
+  <!-- Google Fonts: Lexend (Neuro-inclusive, Dyslexia-optimized) & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Core & Accessibility Stylesheets -->
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/dsa-accessibility.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/conversation.css">
+</head>
+<body class="font-lexend text-size-md dsa-wide-spacing">
+
+  <!-- Scotopic / Irlen Tint Filter Overlay -->
+  <div id="screen-tint-overlay"></div>
+
+  <!-- Dyslexia Visual Reading Guide Ruler -->
+  <div id="dsa-reading-ruler"></div>
+
+  <!-- Adaptive Micro-Lesson Modal (Targeted Mastery Drill) -->
+  <div id="micro-lesson-modal-overlay" class="micro-lesson-modal-overlay"></div>
+
+  <!-- Accessibility Settings Modal -->
+  <div id="a11y-modal-backdrop" class="a11y-modal-backdrop">
+    <div class="a11y-modal">
+      <div class="a11y-modal-header">
+        <h2>🛠️ Accessibilità & Comfort DSA</h2>
+        <button id="btn-close-a11y-modal" class="modal-close-btn">✕</button>
+      </div>
+
+      <div class="a11y-option-group">
+        <label class="a11y-option-label">Dimensione Carattere (Anti-affaticamento)</label>
+        <div class="btn-pill-group">
+          <button class="btn-pill" data-font-size="sm">Normale (14px)</button>
+          <button class="btn-pill active" data-font-size="md">Medio (16px)</button>
+          <button class="btn-pill" data-font-size="lg">Grande (18px)</button>
+          <button class="btn-pill" data-font-size="xl">Massimo (20px)</button>
+        </div>
+      </div>
+
+      <div class="a11y-option-group">
+        <label class="a11y-option-label">Tema di Contrasto Visivo</label>
+        <div class="btn-pill-group">
+          <button class="btn-pill active" data-set-theme="default">🌙 Slate Scuro (Consigliato)</button>
+          <button class="btn-pill" data-set-theme="warm-cream">☀️ Crema Caldo (Anti-riflesso)</button>
+          <button class="btn-pill" data-set-theme="soft-sage">🌿 Salvia Rilassante</button>
+        </div>
+      </div>
+
+      <div class="a11y-option-group">
+        <label class="a11y-option-label">Filtro Sovrapposizione Cromatica (Sindrome di Irlen / DSA)</label>
+        <div class="btn-pill-group">
+          <button class="btn-pill active" data-screen-tint="none">Nessuno</button>
+          <button class="btn-pill" data-screen-tint="amber">Ambra Calda</button>
+          <button class="btn-pill" data-screen-tint="sage">Verde Tenue</button>
+          <button class="btn-pill" data-screen-tint="rose">Rosa Riposante</button>
+        </div>
+      </div>
+
+      <div class="toggle-switch-wrapper">
+        <div>
+          <div class="toggle-label-text">Spaziatura Lettere & Parole Estesa</div>
+          <div class="toggle-subtext">Riduce il sovraffollamento visivo dei caratteri</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="switch-wide-spacing" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="toggle-switch-wrapper">
+        <div>
+          <div class="toggle-label-text">Righello Guida di Lettura</div>
+          <div class="toggle-subtext">Evidenzia la linea seguendo il movimento del mouse</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="switch-reading-ruler">
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Application Settings & AI Config Modal -->
+  <div id="settings-modal-backdrop" class="a11y-modal-backdrop">
+    <div class="a11y-modal">
+      <div class="a11y-modal-header">
+        <h2>⚙️ Impostazioni Percorso & IA</h2>
+        <button id="btn-close-settings-modal" class="modal-close-btn">✕</button>
+      </div>
+
+      <div class="a11y-option-group">
+        <label class="a11y-option-label" for="setting-student-name">Tuo Nome (per il Certificato):</label>
+        <input type="text" id="setting-student-name" class="console-text-input" style="width: 100%;" value="Studente" />
+      </div>
+
+      <div class="a11y-option-group">
+        <label class="a11y-option-label" for="setting-daily-target">Obiettivo Giornaliero Obbligatorio (Minuti):</label>
+        <input type="number" id="setting-daily-target" class="console-text-input" style="width: 100%;" value="25" min="10" max="120" />
+      </div>
+
+      <div class="a11y-option-group">
+        <label class="a11y-option-label" for="setting-ai-provider">Motore di Intelligenza Artificiale:</label>
+        <select id="setting-ai-provider" class="console-text-input" style="width: 100%;">
+          <option value="local">Simulatore Conversazionale Avanzato (Pronto Subito, Gratuito)</option>
+          <option value="gemini">Google Gemini API (Conversazione Live Infinita)</option>
+          <option value="openai">OpenAI ChatGPT API (GPT-4o-mini)</option>
+        </select>
+      </div>
+
+      <div class="a11y-option-group">
+        <label class="a11y-option-label" for="setting-gemini-key">API Key (Opzionale - se usi Gemini/OpenAI):</label>
+        <input type="password" id="setting-gemini-key" class="console-text-input" style="width: 100%;" placeholder="Incolla la tua chiave API qui..." />
+        <span style="font-size: 12px; color: var(--text-muted); display: block; margin-top: 4px;">La chiave viene salvata esclusivamente nel tuo browser.</span>
+      </div>
+
+      <button id="btn-save-settings" class="btn btn-primary" style="width: 100%; margin-top: 10px;">
+        Salva Impostazioni
+      </button>
+    </div>
+  </div>
+
+  <!-- Main App Shell -->
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <aside class="app-sidebar">
+      <div class="brand-wrapper">
+        <div class="brand-icon">🗣️</div>
+        <div class="brand-text">
+          <h1>LexiVox AI</h1>
+          <span class="brand-tag">DSA Inclusive</span>
+        </div>
+      </div>
+
+      <ul class="nav-menu">
+        <li class="nav-item">
+          <button class="nav-btn" data-view="view-live-dialogue">
+            <span class="icon">🎙️</span>
+            <span>Canale Vocale Live</span>
+            <span class="nav-badge">Adattivo</span>
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-btn" data-view="view-diagnostic">
+            <span class="icon">🩺</span>
+            <span>Diagnosi Iniziale</span>
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-btn" data-view="view-analytics">
+            <span class="icon">📊</span>
+            <span>Report & Progressi</span>
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-btn" data-view="view-certificate">
+            <span class="icon">🎓</span>
+            <span>Certificato CEFR</span>
+          </button>
+        </li>
+      </ul>
+
+      <!-- Sidebar Daily Habit Tracker -->
+      <div class="sidebar-streak-box">
+        <div class="streak-header">
+          <span>Costanza Giornaliera</span>
+          <span class="streak-flame">🔥 <span id="sidebar-streak-count">1 gg</span></span>
+        </div>
+        <div class="streak-progress-bar">
+          <div id="sidebar-streak-fill" class="streak-progress-fill"></div>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+          <button id="btn-open-settings-modal" class="tool-chip-btn" style="width: 100%; justify-content: center;">
+            ⚙️ Impostazioni Percorso
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="app-main">
+      <!-- Topbar Header -->
+      <header class="app-header">
+        <div class="header-left">
+          <h2 id="page-header-title" class="page-title">🎙️ Canale Vocale Live</h2>
+        </div>
+
+        <div class="header-actions">
+          <!-- Notification Button -->
+          <button id="btn-toggle-notifications" class="a11y-btn" title="Attiva notifiche di abitudine giornaliera sul telefono" style="background: rgba(255, 190, 11, 0.15); color: var(--accent-amber); border: 1px solid rgba(255, 190, 11, 0.4);">
+            <span>🔔</span> Notifiche
+          </button>
+
+          <!-- Accessibility Toolbar -->
+          <div class="a11y-toolbar">
+            <button id="btn-open-a11y-modal" class="a11y-btn" title="Configura opzioni per DSA e dislessia">
+              <span>♿</span> Strumenti DSA
+            </button>
+          </div>
+
+          <!-- User CEFR Level Badge -->
+          <div id="header-user-level" class="user-level-pill">
+            Livello: Pre-A1
+          </div>
+        </div>
+      </header>
+
+      <!-- Smartphone Install PWA Banner (Appears on Mobile) -->
+      <div id="pwa-install-banner" style="display: none; background: linear-gradient(90deg, #3a86ff, #8338ec); color: white; padding: 12px 24px; align-items: center; justify-content: space-between; font-size: 14px; font-weight: 600;">
+        <span>📱 Installa LexiVox come App sul tuo Telefono (Icona Schermata Home + Notifiche)</span>
+        <button id="btn-pwa-install" class="btn btn-accent" style="padding: 6px 14px; font-size: 13px;">Installa Ora</button>
+      </div>
+
+      <!-- Dynamic Views Container -->
+      <section class="stage-content">
+        <!-- Diagnostic Assessment View -->
+        <div id="view-diagnostic" class="view-panel"></div>
+
+        <!-- Live Spoken Dialogue View -->
+        <div id="view-live-dialogue" class="view-panel active"></div>
+
+        <!-- Analytics & Periodic Report View -->
+        <div id="view-analytics" class="view-panel"></div>
+
+        <!-- Official CEFR Certificate View -->
+        <div id="view-certificate" class="view-panel"></div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Entry Script (ES Modules) -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

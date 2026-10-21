@@ -1,0 +1,316 @@
+/* ==========================================================================
+   LexiVox AI - DSA Accessibility Engine CSS
+   Specialized for Dyslexia, Dysgraphia, Visual Crowding & Low Stress
+   ========================================================================== */
+
+/* Font Switcher Classes */
+body.font-lexend {
+  font-family: 'Lexend', sans-serif !important;
+}
+
+body.font-system {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+}
+
+/* Text Size Variations */
+body.text-size-sm {
+  --font-size-base: 14px;
+  --line-height-base: 1.65;
+}
+body.text-size-md {
+  --font-size-base: 16px;
+  --line-height-base: 1.75;
+}
+body.text-size-lg {
+  --font-size-base: 18px;
+  --line-height-base: 1.85;
+}
+body.text-size-xl {
+  --font-size-base: 20px;
+  --line-height-base: 1.95;
+}
+
+/* Extra Letter & Word Spacing Mode for Dyslexia */
+body.dsa-wide-spacing {
+  letter-spacing: 0.08em !important;
+  word-spacing: 0.22em !important;
+}
+
+/* Screen Tint Overlays (Irlen Syndrome / Scotopic Sensitivity) */
+body[data-tint="amber"] #screen-tint-overlay {
+  background: rgba(255, 235, 179, 0.14);
+}
+body[data-tint="sage"] #screen-tint-overlay {
+  background: rgba(200, 230, 201, 0.15);
+}
+body[data-tint="rose"] #screen-tint-overlay {
+  background: rgba(255, 205, 210, 0.14);
+}
+body[data-tint="cyan"] #screen-tint-overlay {
+  background: rgba(178, 235, 242, 0.14);
+}
+
+/* Reading Ruler Bar */
+#dsa-reading-ruler.active {
+  display: block;
+}
+
+/* Spotlight Reading Mode (Darkens everything except the focused card or line) */
+body.spotlight-mode .app-container::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  pointer-events: none;
+  z-index: 80;
+  transition: opacity 0.3s;
+}
+
+.spotlight-target {
+  position: relative;
+  z-index: 85 !important;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.65), 0 0 30px rgba(58, 134, 255, 0.5) !important;
+  border-radius: var(--radius-md);
+}
+
+/* Bionic-style Reading Highlights */
+.bionic-lead {
+  font-weight: 700;
+  color: var(--accent-cyan);
+}
+
+/* Speakable Element & Instant Audio Helper */
+.speakable-text {
+  cursor: pointer;
+  position: relative;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+  border-radius: 4px;
+  padding: 0 2px;
+}
+
+.speakable-text:hover {
+  background: rgba(58, 134, 255, 0.15);
+  color: var(--accent-cyan);
+}
+
+.audio-btn-inline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  background: rgba(58, 134, 255, 0.15);
+  border: 1px solid rgba(58, 134, 255, 0.3);
+  color: var(--accent-blue);
+  cursor: pointer;
+  font-size: 13px;
+  margin-left: 6px;
+  vertical-align: middle;
+  transition: all var(--transition-fast);
+}
+
+.audio-btn-inline:hover {
+  background: var(--accent-blue);
+  color: #fff;
+  transform: scale(1.1);
+}
+
+.audio-btn-inline.playing {
+  background: var(--accent-cyan);
+  color: #000;
+  animation: pulseAudio 1.2s infinite;
+}
+
+@keyframes pulseAudio {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(6, 214, 160, 0.5); }
+  70% { transform: scale(1.15); box-shadow: 0 0 0 8px rgba(6, 214, 160, 0); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(6, 214, 160, 0); }
+}
+
+/* Color Coding for English Parts of Speech (Metodo Multisensoriale per DSA) */
+.pos-subject {
+  color: #38bdf8; /* Azzurro per soggetto */
+  font-weight: 600;
+}
+.pos-verb {
+  color: #f43f5e; /* Rosso/Rosa per verbo */
+  font-weight: 600;
+}
+.pos-object {
+  color: #34d399; /* Verde per complemento */
+  font-weight: 600;
+}
+.pos-time {
+  color: #fbbf24; /* Giallo per tempo/luogo */
+  font-weight: 600;
+}
+
+/* Modal Accessibility Panel */
+.a11y-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(6px);
+  z-index: 10000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.a11y-modal-backdrop.open {
+  display: flex;
+}
+
+.a11y-modal {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 540px;
+  box-shadow: var(--shadow-md);
+  padding: 28px;
+  animation: slideUp 0.25s ease;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.a11y-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.a11y-modal-header h2 {
+  font-size: 20px;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modal-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 24px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 4px;
+}
+
+.modal-close-btn:hover {
+  color: var(--text-primary);
+}
+
+.a11y-option-group {
+  margin-bottom: 20px;
+}
+
+.a11y-option-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.btn-pill-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.btn-pill {
+  padding: 8px 16px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 14px;
+  font-family: var(--font-family);
+  font-weight: 500;
+  transition: all var(--transition-fast);
+}
+
+.btn-pill:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+}
+
+.btn-pill.active {
+  background: var(--accent-blue);
+  color: white;
+  border-color: var(--accent-blue);
+  box-shadow: 0 2px 10px rgba(58, 134, 255, 0.35);
+}
+
+.toggle-switch-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.toggle-label-text {
+  font-size: 15px;
+  color: var(--text-primary);
+}
+
+.toggle-subtext {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 26px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: var(--bg-surface);
+  transition: .3s;
+  border-radius: 34px;
+  border: 1px solid var(--border-subtle);
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .3s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: var(--accent-cyan);
+}
+
+input:checked + .slider:before {
+  transform: translateX(22px);
+  background-color: #0f172a;
+}

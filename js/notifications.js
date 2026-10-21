@@ -18,6 +18,8 @@ class NotificationService {
       try {
         const reg = await navigator.serviceWorker.register('./sw.js');
         console.log('ServiceWorker registrato con successo:', reg.scope);
+        // Ensure browser fetches the latest version immediately
+        reg.update();
       } catch (err) {
         console.warn('Registrazione ServiceWorker fallita:', err);
       }

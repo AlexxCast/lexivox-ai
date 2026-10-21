@@ -3,7 +3,7 @@
  * Enables PWA installation on smartphones (Android/iOS) and background notifications.
  */
 
-const CACHE_NAME = 'lexivox-cache-v2.7';
+const CACHE_NAME = 'lexivox-cache-v2.8';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -15,6 +15,7 @@ const ASSETS_TO_CACHE = [
   './js/app.js',
   './js/config.js',
   './js/lexicon.js',
+  './js/grammar-gym.js',
   './js/dsa-tools.js',
   './js/diagnostic.js',
   './js/error-tracker.js',

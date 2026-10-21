@@ -10,6 +10,7 @@ import { liveDialogueController } from './live-dialogue.js';
 import { analyticsController } from './analytics.js';
 import { certificateController } from './certificate.js';
 import { microLessonManager } from './micro-lessons.js';
+import { grammarGymController } from './grammar-gym.js';
 import { notificationService } from './notifications.js';
 
 class AppController {
@@ -115,6 +116,9 @@ class AppController {
     const titleEl = document.getElementById('page-header-title');
     if (titleEl) {
       switch (viewId) {
+        case 'view-grammar-gym':
+          titleEl.textContent = '🏋️ Palestra di Grammatica Adattiva (Zero Risposta Multipla)';
+          break;
         case 'view-diagnostic':
           titleEl.textContent = '🩺 Diagnosi Iniziale & Obiettivo Personalizzato';
           break;
@@ -131,7 +135,9 @@ class AppController {
     }
 
     // Mount view components
-    if (viewId === 'view-diagnostic') {
+    if (viewId === 'view-grammar-gym') {
+      grammarGymController.mount(activePanel);
+    } else if (viewId === 'view-diagnostic') {
       diagnosticEngine.renderStep(activePanel);
     } else if (viewId === 'view-live-dialogue') {
       liveDialogueController.mount(activePanel);

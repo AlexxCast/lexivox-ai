@@ -507,3 +507,33 @@ body {
   border-color: transparent !important;
   box-shadow: 0 4px 14px rgba(58, 134, 255, 0.4);
 }
+
+/* Grammar Gym Interactive Styling */
+.gym-cat-btn {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+.gym-cat-btn:hover {
+  background: rgba(6, 214, 160, 0.15);
+  border-color: var(--accent-cyan);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+}
+.gym-cat-btn.active-level {
+  background: linear-gradient(135deg, #06d6a0, #118ab2) !important;
+  color: #0b132b !important;
+  font-weight: 700 !important;
+  border-color: transparent !important;
+  box-shadow: 0 4px 14px rgba(6, 214, 160, 0.35);
+}
+
+.grammar-interactive-sentence input:focus {
+  outline: none;
+  border-bottom-color: var(--accent-cyan) !important;
+  box-shadow: 0 0 15px rgba(6, 214, 160, 0.3);
+}
+
